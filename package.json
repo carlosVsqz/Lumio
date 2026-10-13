@@ -5,6 +5,8 @@
   "scripts": {
     "install:storefront": "npm ci --prefix lm-storefront",
     "dev:storefront": "npm start --prefix lm-storefront",
-    "build:storefront": "npm run build --prefix lm-storefront"
+    "build:storefront": "npm run build --prefix lm-storefront",
+    "release:build": "node scripts/Build-LumioRelease.mjs",
+    "test:deployment": "node --test scripts/tests/*.test.mjs"
   }
 }

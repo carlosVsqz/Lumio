@@ -1,0 +1,41 @@
+# syntax=docker/dockerfile:1
+FROM node:24-bookworm-slim AS node-toolchain
+FROM eclipse-temurin:21-jdk AS prerender
+COPY --from=node-toolchain /usr/local /usr/local
+# Compose supplies the Java image compiled from this SAME checkout as a named context.
+COPY --from=lumio_core /app/app.jar /opt/lumio/app.jar
+WORKDIR /workspace/lm-storefront
+COPY lm-storefront/package.json lm-storefront/package-lock.json ./
+RUN npm ci
+COPY lm-storefront ./
+COPY scripts/release-config.mjs scripts/dokploy-prerender.mjs /opt/lumio/
+RUN npm test
+ARG PUBLIC_SITE_URL
+ARG LUMIO_CATALOG_ID
+ARG LUMIO_LOGO_URL
+ARG LUMIO_PRIMARY_COLOR
+ARG ODOO_BUILD_URL
+ARG ODOO_DATABASE
+ARG ODOO_WEBSITE_ID
+ARG ODOO_PRICELIST_ID
+ARG ODOO_WAREHOUSE_ID
+ARG ODOO_STOCK_POLICY
+ARG ODOO_LANGUAGE
+ARG ODOO_CAMPAIGNS_ENABLED
+ARG ODOO_BUSINESS_NAME
+ARG ODOO_BUSINESS_DESCRIPTION
+ARG ODOO_WHATSAPP_NUMBER
+ARG ODOO_CONNECT_TIMEOUT_MS
+ARG ODOO_REQUEST_TIMEOUT_MS
+ARG ODOO_MAX_RECORDS
+ARG ODOO_MAX_IMAGE_BYTES
+RUN --mount=type=secret,id=odoo_api_key,required=true \
+    node /opt/lumio/dokploy-prerender.mjs
+
+FROM nginx:stable-alpine
+COPY lm-storefront/nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=prerender /workspace/lm-storefront/dist/lm-storefront/browser /usr/share/nginx/html
+RUN test -s /usr/share/nginx/html/static-build.json
+EXPOSE 80
+HEALTHCHECK --interval=15s --timeout=5s --start-period=5s --retries=3 \
+  CMD wget -q -O /dev/null http://127.0.0.1/healthz || exit 1

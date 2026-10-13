@@ -9,4 +9,5 @@ infrastructure/odoo/local/
 **/.env
 **/.env.*
 !**/.env.example
+!**/.env.production.example
 lm-storefront

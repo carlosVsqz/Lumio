@@ -1,0 +1,162 @@
+# Dokploy: Docker Compose, Isolated Deployments enabled, domains configured in the UI.
+# Dokploy builds directly from this checkout; no registry/push step or repository bind mounts.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  lm-core:
+    profiles: [storefront]
+    build:
+      context: .
+      dockerfile: lm-core/Dockerfile
+    environment:
+      CATALOG_PROVIDER: odoo
+      LUMIO_CATALOG_ID: ${LUMIO_CATALOG_ID:?Configure a stable production catalog ID}
+      LUMIO_LOGO_URL: ${LUMIO_LOGO_URL:-}
+      LUMIO_PRIMARY_COLOR: ${LUMIO_PRIMARY_COLOR:-}
+      GRAPHIQL_ENABLED: "false"
+      SERVER_FORWARD_HEADERS_STRATEGY: framework
+      ODOO_URL: ${ODOO_URL:-http://odoo:8069}
+      ODOO_DATABASE: ${ODOO_DATABASE:?Configure ODOO_DATABASE}
+      # Blank only during the explicit Odoo bootstrap. Java rejects missing API configuration.
+      ODOO_API_KEY: ${ODOO_API_KEY:-}
+      ODOO_WEBSITE_ID: ${ODOO_WEBSITE_ID:-0}
+      ODOO_PRICELIST_ID: ${ODOO_PRICELIST_ID:-0}
+      ODOO_WAREHOUSE_ID: ${ODOO_WAREHOUSE_ID:-0}
+      ODOO_STOCK_POLICY: ${ODOO_STOCK_POLICY:-FREE_STOCK}
+      ODOO_LANGUAGE: ${ODOO_LANGUAGE:-es_ES}
+      ODOO_CAMPAIGNS_ENABLED: ${ODOO_CAMPAIGNS_ENABLED:-true}
+      ODOO_BUSINESS_NAME: ${ODOO_BUSINESS_NAME:-}
+      ODOO_BUSINESS_DESCRIPTION: ${ODOO_BUSINESS_DESCRIPTION:-}
+      ODOO_WHATSAPP_NUMBER: ${ODOO_WHATSAPP_NUMBER:-}
+      ODOO_CONNECT_TIMEOUT_MS: ${ODOO_CONNECT_TIMEOUT_MS:-3000}
+      ODOO_REQUEST_TIMEOUT_MS: ${ODOO_REQUEST_TIMEOUT_MS:-10000}
+      ODOO_MAX_RECORDS: ${ODOO_MAX_RECORDS:-5000}
+      ODOO_MAX_IMAGE_BYTES: ${ODOO_MAX_IMAGE_BYTES:-4000000}
+      JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=65.0 -XX:+ExitOnOutOfMemoryError
+    expose: ["8080"]
+    mem_limit: ${LUMIO_CORE_MEMORY:-768m}
+    init: true
+    restart: unless-stopped
+    logging: *logging
+    stop_grace_period: 30s
+
+  lm-storefront:
+    profiles: [storefront]
+    build:
+      context: .
+      dockerfile: infrastructure/dokploy/Dockerfile.storefront
+      # A catalog change/invalid key must never reuse an older successful prerender layer.
+      no_cache: true
+      additional_contexts:
+        lumio_core: service:lm-core
+      secrets: [odoo_api_key]
+      args:
+        PUBLIC_SITE_URL: ${PUBLIC_SITE_URL:?Configure the HTTPS storefront origin}
+        LUMIO_CATALOG_ID: ${LUMIO_CATALOG_ID:?Configure a stable production catalog ID}
+        LUMIO_LOGO_URL: ${LUMIO_LOGO_URL:-}
+        LUMIO_PRIMARY_COLOR: ${LUMIO_PRIMARY_COLOR:-}
+        ODOO_BUILD_URL: ${ODOO_BUILD_URL:-}
+        ODOO_DATABASE: ${ODOO_DATABASE:?Configure ODOO_DATABASE}
+        ODOO_WEBSITE_ID: ${ODOO_WEBSITE_ID:-0}
+        ODOO_PRICELIST_ID: ${ODOO_PRICELIST_ID:-0}
+        ODOO_WAREHOUSE_ID: ${ODOO_WAREHOUSE_ID:-0}
+        ODOO_STOCK_POLICY: ${ODOO_STOCK_POLICY:-FREE_STOCK}
+        ODOO_LANGUAGE: ${ODOO_LANGUAGE:-es_ES}
+        ODOO_CAMPAIGNS_ENABLED: ${ODOO_CAMPAIGNS_ENABLED:-true}
+        ODOO_BUSINESS_NAME: ${ODOO_BUSINESS_NAME:-}
+        ODOO_BUSINESS_DESCRIPTION: ${ODOO_BUSINESS_DESCRIPTION:-}
+        ODOO_WHATSAPP_NUMBER: ${ODOO_WHATSAPP_NUMBER:-}
+        ODOO_CONNECT_TIMEOUT_MS: ${ODOO_CONNECT_TIMEOUT_MS:-3000}
+        ODOO_REQUEST_TIMEOUT_MS: ${ODOO_REQUEST_TIMEOUT_MS:-10000}
+        ODOO_MAX_RECORDS: ${ODOO_MAX_RECORDS:-5000}
+        ODOO_MAX_IMAGE_BYTES: ${ODOO_MAX_IMAGE_BYTES:-4000000}
+    depends_on:
+      lm-core:
+        condition: service_healthy
+    expose: ["80"]
+    mem_limit: ${LUMIO_STOREFRONT_MEMORY:-128m}
+    restart: unless-stopped
+    logging: *logging
+
+  odoo:
+    build:
+      context: ./infrastructure/odoo
+    profiles: [odoo]
+    depends_on:
+      odoo-db:
+        condition: service_healthy
+    environment:
+      HOST: odoo-db
+      PORT: "5432"
+      USER: ${ODOO_DB_USER:-lumio_odoo}
+      PASSWORD: ${ODOO_DB_PASSWORD:-}
+      ODOO_DATABASE: ${ODOO_DATABASE:?Configure ODOO_DATABASE}
+      ODOO_MASTER_PASSWORD: ${ODOO_MASTER_PASSWORD:-}
+      ODOO_WORKERS: ${ODOO_WORKERS:-2}
+      ODOO_CRON_THREADS: ${ODOO_CRON_THREADS:-1}
+      ODOO_WORKER_MEMORY_SOFT: ${ODOO_WORKER_MEMORY_SOFT:-536870912}
+      ODOO_WORKER_MEMORY_HARD: ${ODOO_WORKER_MEMORY_HARD:-805306368}
+    expose: ["8069", "8072"]
+    volumes:
+      - odoo-web-data:/var/lib/odoo
+    mem_limit: ${ODOO_MEMORY:-2g}
+    shm_size: 256m
+    restart: unless-stopped
+    logging: *logging
+    stop_grace_period: 60s
+
+  odoo-db:
+    image: ${POSTGRES_IMAGE:-postgres:17}
+    profiles: [odoo]
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: ${POSTGRES_ADMIN_USER:-lumio_db_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_ADMIN_PASSWORD:-}
+      ODOO_DB_USER: ${ODOO_DB_USER:-lumio_odoo}
+      ODOO_DB_PASSWORD: ${ODOO_DB_PASSWORD:-}
+      ODOO_DATABASE: ${ODOO_DATABASE:?Configure ODOO_DATABASE}
+    volumes:
+      - odoo-db-data:/var/lib/postgresql/data
+    configs:
+      - source: odoo-db-init
+        target: /docker-entrypoint-initdb.d/10-lumio.sh
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -h 127.0.0.1 -U "$${POSTGRES_USER}" -d postgres']
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    mem_limit: ${POSTGRES_MEMORY:-512m}
+    restart: unless-stopped
+    logging: *logging
+    stop_grace_period: 60s
+
+volumes:
+  odoo-web-data:
+  odoo-db-data:
+
+secrets:
+  # Compose reads Environment/.env; BuildKit mounts the key only for the prerender RUN.
+  odoo_api_key:
+    environment: ODOO_API_KEY
+
+configs:
+  # No secret in this config: values are read from the database container environment.
+  # Runs only when PostgreSQL initializes an EMPTY volume; never migrates an existing DB.
+  odoo-db-init:
+    content: |
+      #!/bin/sh
+      set -eu
+      : "$${ODOO_DB_USER:?Missing ODOO_DB_USER}"
+      : "$${ODOO_DB_PASSWORD:?Missing ODOO_DB_PASSWORD}"
+      : "$${ODOO_DATABASE:?Missing ODOO_DATABASE}"
+      psql --username "$${POSTGRES_USER}" --dbname postgres --set ON_ERROR_STOP=1 \
+        --set app_user="$${ODOO_DB_USER}" --set app_password="$${ODOO_DB_PASSWORD}" \
+        --set app_db="$${ODOO_DATABASE}" <<'SQL'
+      CREATE ROLE :"app_user" LOGIN PASSWORD :'app_password' NOSUPERUSER NOCREATEDB NOCREATEROLE;
+      CREATE DATABASE :"app_db" OWNER :"app_user";
+      SQL
