@@ -1,0 +1,32 @@
+<section class="pt-10 pb-8 lg:pt-12" aria-labelledby="favorites-title">
+  <h1 id="favorites-title" class="page-title" tabindex="-1">Favoritos @if (store.ready()) { <span class="ml-1 font-normal text-muted tabular-nums">({{ store.count() }})</span> }</h1>
+  <p class="mt-3 text-sm leading-6 text-muted">Guardados en este navegador. Elige la variante y cantidad en la ficha antes de añadir al pedido.</p>
+</section>
+@if (store.storageWarning()) { <p role="status" class="mb-6 bg-image p-4 text-sm leading-6">{{ store.storageWarning() }}</p> }
+<section aria-label="Artículos favoritos" [attr.aria-busy]="metadataLoading() || loading()">
+  @if (metadataLoading() || (loading() && !rows().length)) {
+    <p role="status" class="py-16 text-muted">Cargando favoritos…</p>
+  } @else if (metadataError() || error()) {
+    <div role="alert" class="py-16 text-center"><h2 class="text-2xl font-semibold">No pudimos consultar tus favoritos</h2><p class="mt-4 text-sm leading-6 text-muted">Comprueba tu conexión e inténtalo de nuevo. Tus identificadores guardados se conservan.</p><button type="button" class="brand-button mt-6" (click)="refresh()">Reintentar</button></div>
+  } @else if (!store.ready()) {
+    <div role="alert" class="py-16 text-center"><h2 class="text-2xl font-semibold">No se pudo identificar el catálogo</h2><button type="button" class="brand-button mt-6" (click)="refresh()">Reintentar</button></div>
+  } @else if (!store.count()) {
+    <div class="py-16 text-center"><h2 class="text-2xl font-semibold">Aún no tienes favoritos</h2><p class="mt-4 text-sm leading-6 text-muted">Usa el corazón para guardar artículos que quieras volver a ver.</p><a routerLink="/" class="brand-button mt-6">Explorar el catálogo</a></div>
+  } @else if (catalog(); as currentCatalog) {
+    @if (loading()) { <p role="status" class="mb-4 text-sm text-muted">Actualizando favoritos…</p> }
+    <div class="grid grid-cols-2 gap-x-3 gap-y-5 sm:gap-x-5 lg:grid-cols-3 xl:grid-cols-4">
+      @for (row of visibleRows(); track row.id) {
+        @if (row.item; as item) {
+          <app-catalog-card [item]="item" [catalog]="currentCatalog" [priority]="$index < 3" (favoriteRemoved)="focusAfterRemoval(row.id)" />
+        } @else {
+          <article class="min-w-0 pb-7" [attr.aria-labelledby]="'missing-' + row.id">
+            <div class="relative aspect-[4/5] bg-image"><app-product-image [image]="null" label="Artículo no disponible" /><app-favorite-button class="absolute top-2 right-2" [itemId]="row.id" [catalogId]="currentCatalog.id" [descriptionId]="'missing-' + row.id" (removed)="focusAfterRemoval(row.id)" /></div>
+            <h2 class="mt-4 text-sm font-semibold leading-6 sm:text-base" [id]="'missing-' + row.id">Artículo no disponible</h2>
+            <p class="mt-1 break-all text-xs leading-5 text-muted">Referencia: {{ row.id }}</p>
+            <p class="mt-3 text-xs leading-5 text-muted">Ya no existe o no está publicado. Puedes quitarlo de favoritos.</p>
+          </article>
+        }
+      }
+    </div>
+  }
+</section>

@@ -1,0 +1,3 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_campaign_reader,Lumio campaign reader,model_lumio_campaign_slide,group_campaign_reader,1,0,0,0
+access_campaign_manager,Lumio campaign manager,model_lumio_campaign_slide,group_campaign_manager,1,1,1,1

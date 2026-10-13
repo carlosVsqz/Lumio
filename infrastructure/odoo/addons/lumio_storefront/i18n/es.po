@@ -1,0 +1,16 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 19.0\n"
+"Language: es\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#. module: lumio_storefront
+#: model_terms:ir.ui.view,arch_db:lumio_storefront.login_form
+msgid "Username"
+msgstr "Usuario"
+
+#. module: lumio_storefront
+#: model_terms:ir.ui.view,arch_db:lumio_storefront.login_form
+msgid "Show or hide password"
+msgstr "Mostrar u ocultar contraseña"

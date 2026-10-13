@@ -1,0 +1,7 @@
+plugins {
+    id 'base'
+}
+
+tasks.named('build') {
+    dependsOn ':lm-core:build'
+}

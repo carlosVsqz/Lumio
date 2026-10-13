@@ -1,0 +1,12 @@
+**/node_modules
+**/dist
+**/.angular
+**/build
+**/.gradle
+.git
+.env
+infrastructure/odoo/local/
+**/.env
+**/.env.*
+!**/.env.example
+lm-storefront

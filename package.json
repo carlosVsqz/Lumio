@@ -1,0 +1,10 @@
+{
+  "name": "lumio",
+  "private": true,
+  "version": "0.0.1",
+  "scripts": {
+    "install:storefront": "npm ci --prefix lm-storefront",
+    "dev:storefront": "npm start --prefix lm-storefront",
+    "build:storefront": "npm run build --prefix lm-storefront"
+  }
+}

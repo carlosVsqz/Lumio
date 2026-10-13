@@ -1,0 +1,23 @@
+<app-catalog-search inputId="catalog-search" label="Buscar en el catálogo" [showLabel]="true" class="mb-8" />
+@if (facets().length) {
+  <h2 class="mb-5 text-sm font-semibold">Características</h2>
+  @for (facet of facets(); track facet.name) {
+    <fieldset class="mb-6">
+      <legend class="mb-2 text-sm font-semibold">{{facet.name}}</legend>
+      @for (option of facet.values; track option.value) {
+        <label class="flex min-h-11 items-center gap-3 text-sm" [class.cursor-pointer]="!disabled(facet.name,option.value,option.count)" [class.text-muted]="disabled(facet.name,option.value,option.count)">
+          <input type="checkbox" class="h-5 w-5 shrink-0 accent-[var(--color-accent)]" [checked]="selected(facet.name,option.value)"
+            [disabled]="disabled(facet.name,option.value,option.count)" (change)="toggle(facet.name,option.value,$any($event.target).checked)">
+          <span class="min-w-0 flex-1 break-words">{{option.value}}</span><span class="shrink-0 text-xs text-muted tabular-nums">({{option.count}})</span>
+        </label>
+      }
+    </fieldset>
+  }
+}
+<fieldset class="border-t border-line pt-6">
+  <legend class="sr-only">Disponibilidad</legend>
+  <label class="flex min-h-11 cursor-pointer items-center gap-3 text-sm"><input class="h-5 w-5 accent-[var(--color-accent)]" type="checkbox" [checked]="query().availableOnly" [disabled]="loading()" (change)="apply.emit({availableOnly: $any($event.target).checked})">Solo disponibles</label>
+</fieldset>
+@if (query().search || query().categoryId || query().availableOnly || query().attributes.length) {
+  <button type="button" class="mt-6 px-0 text-sm font-normal underline underline-offset-4" (click)="apply.emit({ search: '', categoryId: '', availableOnly: false, attributes:[] })">Limpiar filtros</button>
+}

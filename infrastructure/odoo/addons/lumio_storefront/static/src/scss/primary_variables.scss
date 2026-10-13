@@ -1,0 +1,22 @@
+// Odoo and Bootstrap derive their controls and states from these brand tokens.
+$o-community-color: #171717 !default;
+$o-enterprise-color: #171717 !default;
+$o-enterprise-action-color: #262626 !default;
+$o-brand-odoo: #171717 !default;
+$o-brand-primary: #171717 !default;
+$o-brand-secondary: #525252 !default;
+$o-action: #262626 !default;
+
+$o-navbar-background: #171717 !default;
+$o-navbar-entry-bg--hover: #303030 !default;
+$o-navbar-entry-bg--active: #404040 !default;
+
+// The website/login bundle has its own palette; give it the same neutral brand.
+$o-user-color-palette: (
+    'o-color-1': #171717,
+    'o-color-2': #525252,
+) !default;
+$o-user-theme-color-palette: (
+    'primary': #171717,
+    'secondary': #525252,
+) !default;

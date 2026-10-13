@@ -1,0 +1,41 @@
+<footer class="border-t border-line bg-image">
+  <div class="mx-auto max-w-[1600px] px-5 lg:px-12">
+    <div class="grid gap-x-12 gap-y-9 py-10 sm:grid-cols-2 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1fr)] lg:py-14">
+      <div class="min-w-0 sm:col-span-2 lg:col-span-1">
+        <app-store-brand />
+        @if (brand.catalog()?.description) { <p class="mt-3 max-w-sm whitespace-pre-line text-sm leading-7 text-muted">{{ brand.catalog()!.description }}</p> }
+      </div>
+      <nav class="min-w-0" aria-labelledby="footer-explore-title">
+        <h2 id="footer-explore-title" class="mb-3 text-sm font-semibold">Explorar</h2>
+        <ul class="text-sm">
+          <li><a routerLink="/" class="inline-flex min-h-11 items-center py-2 hover:underline underline-offset-4">Todo el catálogo</a></li>
+          @for (category of (brand.catalog()?.categories ?? []).slice(0, 5); track category.id) {
+            <li><a routerLink="/" [queryParams]="{category: category.id}" class="block min-h-11 break-words py-3 hover:underline underline-offset-4">{{ category.name }}</a></li>
+          }
+          @if ((brand.catalog()?.categories?.length ?? 0) > 5) { <li><a routerLink="/" class="inline-flex min-h-11 items-center py-2 underline underline-offset-4">Ver todas las categorías</a></li> }
+        </ul>
+      </nav>
+      <div class="min-w-0">
+        <nav aria-labelledby="footer-selection-title">
+          <h2 id="footer-selection-title" class="mb-3 text-sm font-semibold">Tu selección</h2>
+          <ul class="text-sm">
+            <li><a routerLink="/favoritos" class="inline-flex min-h-11 items-center gap-3 py-2 hover:underline underline-offset-4"><app-ui-icon name="heart" /> Mis favoritos</a></li>
+            <li><a routerLink="/pedido" class="inline-flex min-h-11 items-center gap-3 py-2 hover:underline underline-offset-4"><app-ui-icon name="bag" /> Mi pedido</a></li>
+          </ul>
+        </nav>
+        <p class="mt-3 max-w-sm text-sm leading-7 text-muted">Revisa tu pedido para preparar la consulta por WhatsApp.</p>
+        <a routerLink="/pedido" class="text-link mt-2">Revisar mi pedido <app-ui-icon name="right" /></a>
+      </div>
+    </div>
+    <div class="flex flex-wrap items-center justify-between gap-x-8 gap-y-3 border-t border-line py-6 text-xs leading-6 text-muted">
+      <p>Catálogo y consultas · Lumio</p>
+      @if (brand.catalog(); as catalog) { <p>Precios en {{ catalog.currency }}. El negocio confirma precio y disponibilidad.</p> }
+      <button type="button" class="theme-toggle inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-input-border bg-surface px-4 py-2 text-xs text-ink hover:bg-image"
+              [disabled]="!theme.ready()" [attr.aria-label]="theme.mode() === 'dark' ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'"
+              [title]="theme.mode() === 'dark' ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'" (click)="theme.toggle()">
+        <app-ui-icon [name]="theme.mode() === 'dark' ? 'sun' : 'moon'" [size]="18" />
+        {{ theme.mode() === 'dark' ? 'Tema claro' : 'Tema oscuro' }}
+      </button>
+    </div>
+  </div>
+</footer>

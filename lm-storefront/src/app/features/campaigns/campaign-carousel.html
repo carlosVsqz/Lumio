@@ -1,0 +1,46 @@
+@if (store.slides().length) {
+  <section class="campaign-surface" aria-label="Novedades del negocio" aria-roledescription="carrusel"
+           (pointerenter)="pointerEnter($event)" (pointerleave)="hovered.set(false)"
+           (focusin)="focused.set(true)" (focusout)="focusOut($event)">
+    <div class="mx-auto grid w-full max-w-5xl grid-cols-[2.75rem_minmax(0,1fr)_2.75rem] items-center gap-1 px-3 py-3 sm:gap-5 sm:px-6">
+      @if (store.slides().length > 1) {
+        <button type="button" class="campaign-control" aria-label="Campaña anterior" (click)="move(-1,$event)"><app-ui-icon name="left" [size]="18" /></button>
+      } @else { <span></span> }
+      <div class="grid min-w-0 text-center">
+        @for (slide of store.slides(); track slide.id; let i=$index) {
+          <div class="campaign-panel" [class.instant]="instant()" role="group" aria-roledescription="diapositiva"
+               [attr.aria-label]="(i+1)+' de '+store.slides().length" [attr.aria-hidden]="i!==index()" [attr.inert]="i!==index() ? '' : null">
+            <p class="text-sm leading-snug font-semibold">{{ slide.title }}</p>
+            @if (slide.message) { <p class="mt-1 text-xs leading-relaxed">{{ slide.message }}</p> }
+            @if (slide.actionUrl) {
+              @if (slide.actionUrl.startsWith('/')) {
+                <a class="inline-flex min-h-11 items-center py-2 text-xs font-semibold underline underline-offset-4" [routerLink]="internalLink(slide.actionUrl)">{{ slide.actionLabel }}</a>
+              } @else {
+                <a class="inline-flex min-h-11 items-center py-2 text-xs font-semibold underline underline-offset-4" [href]="slide.actionUrl" rel="noopener noreferrer">{{ slide.actionLabel }}</a>
+              }
+            }
+          </div>
+        }
+      </div>
+      @if (store.slides().length > 1) {
+        <button type="button" class="campaign-control" aria-label="Campaña siguiente" (click)="move(1,$event)"><app-ui-icon name="right" [size]="18" /></button>
+      } @else { <span></span> }
+    </div>
+    @if (store.slides().length > 1) {
+      <div class="flex items-center justify-center gap-3 pb-2 text-xs">
+        <p class="tabular-nums" aria-hidden="true">{{index()+1}} / {{store.slides().length}}</p>
+        <button type="button" class="campaign-control" [disabled]="reducedMotion()"
+                [attr.aria-label]="reducedMotion() ? 'Avance automático desactivado por movimiento reducido' : rotationEnabled() ? 'Pausar avance automático' : 'Reanudar avance automático'"
+                [title]="reducedMotion() ? 'Movimiento reducido: usa las flechas' : rotationEnabled() ? 'Pausar' : 'Reanudar'" (click)="toggleRotation()">
+          <app-ui-icon [name]="rotationEnabled() ? 'pause' : 'play'" [size]="14" />
+        </button>
+      </div>
+    }
+    <p class="sr-only" role="status" aria-live="polite" aria-atomic="true">{{announcement()}}</p>
+  </section>
+} @else if (store.error()) {
+  <div class="flex flex-wrap items-center justify-center gap-x-3 bg-image px-5 py-2 text-center text-xs">
+    <p role="status">No se pudieron cargar las novedades del negocio.</p>
+    <button type="button" class="px-2 py-2 text-xs underline underline-offset-4" [disabled]="store.loading()" (click)="store.refresh()">{{store.loading() ? 'Consultando…' : 'Reintentar'}}</button>
+  </div>
+}

@@ -1,0 +1,84 @@
+type Query {
+  campaigns: [CampaignSlide!]!
+  itemBySlug(slug: String!): CatalogItem
+  itemsByIds(ids: [ID!]!, catalogId: ID!): [CatalogItemLookup!]!
+  catalog: Catalog!
+  items: [CatalogItem!]!
+  categories: [Category!]!
+  itemPage(search: String, categoryId: ID, page: Int = 1, pageSize: Int = 12, sort: CatalogSort = CATALOG_ORDER, availableOnly: Boolean = false, attributes: [CatalogAttributeFilterInput!]): CatalogItemPage!
+}
+
+type CampaignSlide {
+  id: ID!
+  title: String!
+  message: String!
+  actionLabel: String!
+  actionUrl: String!
+}
+
+enum CatalogSort { CATALOG_ORDER NAME_ASC PRICE_ASC PRICE_DESC }
+input CatalogAttributeFilterInput { name: String! values: [String!]! }
+type CatalogAttributeFacet { name: String! values: [CatalogAttributeFacetValue!]! }
+type CatalogAttributeFacetValue { value: String! count: Int! }
+type CatalogBranding { logoUrl: String! primaryColor: String! }
+
+type CatalogItemPage {
+  facets: [CatalogAttributeFacet!]!
+  items: [CatalogItem!]!
+  totalCount: Int!
+  page: Int!
+  pageSize: Int!
+  totalPages: Int!
+}
+type Catalog {
+  id: ID!
+  branding: CatalogBranding!
+  name: String!
+  description: String!
+  currency: String!
+  currencyDecimals: Int!
+  whatsappNumber: String!
+  categories: [Category!]!
+  items: [CatalogItem!]!
+}
+
+type CatalogItemLookup {
+  id: ID!
+  item: CatalogItem
+}
+type Category {
+  id: ID!
+  slug: String!
+  name: String!
+  description: String!
+}
+type CatalogImage {
+  url: String!
+  alt: String!
+}
+type VariantAttribute {
+  name: String!
+  value: String!
+}
+type CatalogVariant {
+  id: ID!
+  slug: String!
+  name: String!
+  attributes: [VariantAttribute!]!
+  priceMinor: Int!
+  available: Boolean!
+}
+enum CatalogItemType { PRODUCT SERVICE }
+
+type CatalogItem {
+  attributes: [VariantAttribute!]!
+  type: CatalogItemType!
+  id: ID!
+  slug: String!
+  name: String!
+  description: String!
+  categoryIds: [ID!]!
+  images: [CatalogImage!]!
+  variants: [CatalogVariant!]!
+  available: Boolean!
+}

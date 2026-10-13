@@ -1,0 +1,17 @@
+{
+  "name": "Test Business", "description": "Catalog from a JSON file",
+  "currency": "KWD", "currencyDecimals": 3, "whatsappNumber": "",
+  "categories": [{ "id": "products", "slug": "products", "name": "Products", "description": "Example category" }],
+  "items": [
+    {
+      "id": "product", "slug": "product", "name": "Product", "description": "Example product",
+      "categoryIds": ["products"], "images": [{ "url": "/images/example.svg", "alt": "Example product" }], "available": true,
+      "variants": [{ "id": "product-m", "slug": "medium", "name": "Medium", "attributes": [{ "name": "size", "value": "M" }], "priceMinor": 123456, "available": false }]
+    },
+    {
+      "id": "service", "type": "SERVICE", "slug": "service", "name": "Service", "description": "Example service",
+      "categoryIds": [], "images": [], "available": true,
+      "variants": [{ "id": "service-session", "slug": "session", "name": "Session", "attributes": [], "priceMinor": 0, "available": true }]
+    }
+  ]
+}

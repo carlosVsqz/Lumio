@@ -1,0 +1,8 @@
+node_modules
+.angular
+target
+.git
+.env
+**/.env
+**/.env.*
+!**/.env.example

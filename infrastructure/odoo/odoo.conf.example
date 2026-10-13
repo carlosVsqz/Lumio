@@ -1,0 +1,8 @@
+[options]
+; Copiar fuera del repositorio al directorio ODOO_CONFIG_DIRECTORY como odoo.conf.
+; Sustituir este marcador localmente antes de crear la base de datos.
+admin_passwd = CHANGE_ME_LOCALLY
+; La conexión PostgreSQL la configura la imagen mediante HOST/PORT/USER/PASSWORD.
+; No definir db_host/db_user/db_password aquí: prevalecen sobre esas variables.
+addons_path = /usr/lib/python3/dist-packages/odoo/addons,/mnt/extra-addons
+data_dir = /var/lib/odoo

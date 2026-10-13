@@ -1,0 +1,75 @@
+<a routerLink="/" class="text-link mt-3 text-muted hover:text-ink"><app-ui-icon name="left" />Seguir explorando</a>
+<header class="pt-6 pb-9">
+  <h1 class="page-title">Mi pedido</h1>
+  <p class="mt-4 max-w-prose text-sm leading-7 text-muted">Ajusta las cantidades y revisa el total estimado. El negocio confirmará precios y disponibilidad por WhatsApp.</p>
+</header>
+@if (store.storageWarning()) { <p role="alert" class="mb-6 rounded-md bg-image p-5 text-sm leading-6">{{ store.storageWarning() }}</p> }
+@if (!store.ready()) { <p role="status" class="py-12 text-muted">Recuperando tu selección…</p> }
+@else if (!store.lines().length) {
+  <section class="py-16 text-center">
+    <h2 class="text-2xl font-semibold tracking-[-.02em]">Tu pedido está vacío</h2>
+    <p class="mt-4 text-sm text-muted">Elige un artículo, su variante y cantidad para empezar.</p>
+    <a routerLink="/" class="secondary-button mt-6">Explorar catálogo</a>
+  </section>
+} @else {
+  <div class="grid items-start gap-10 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-14">
+    <section aria-label="Líneas del pedido" class="min-w-0">
+      @for (line of store.lines(); track line.variantId) {
+        <article class="border-b border-line py-7 first:pt-0">
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+            <div class="min-w-0">
+              <h2 class="text-xl font-semibold leading-7 tracking-[-.02em]"><a [routerLink]="['/catalogo', line.itemSlug]" class="hover:underline underline-offset-4">{{ line.itemName }}</a></h2>
+              <p class="mt-2 text-sm text-muted">{{ line.variantName }}</p>
+              <p class="mt-2 break-words text-xs leading-5 text-muted">Ref. {{ line.itemId }} / {{ line.variantId }}</p>
+            </div>
+            <button type="button" class="self-start px-0 py-2 text-sm font-normal text-muted underline underline-offset-4 hover:text-ink" [attr.aria-label]="'Eliminar ' + line.itemName + ', ' + line.variantName" (click)="store.remove(line.variantId)">Eliminar</button>
+          </div>
+          @if (line.attributes.length) {
+            <dl class="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm">
+              @for (attribute of line.attributes; track attribute.name) { <div class="flex min-w-0 flex-wrap gap-2"><dt class="text-muted">{{ attribute.name }}:</dt><dd>{{ attribute.value }}</dd></div> }
+            </dl>
+          }
+          @if (!line.available) { <p class="mt-4 text-sm font-semibold text-unavailable-ink">No disponible. Elimina la línea o elige otra variante.</p> }
+          <div class="mt-6 flex flex-wrap items-end justify-between gap-5">
+            <app-quantity-input [id]="'qty-' + line.variantId" [label]="'Cantidad de ' + line.variantName" [value]="quantityText(line)" (change)="edit(line, $event)" />
+            <div class="min-w-0 text-right tabular-nums"><p class="text-xs leading-6 text-muted">{{ price(line.priceMinor) }} por unidad</p><p class="mt-1 text-base font-semibold">Subtotal: {{ subtotal(line) }}</p></div>
+          </div>
+        </article>
+      }
+    </section>
+    <aside class="min-w-0 rounded-lg bg-image p-5 sm:p-6 lg:sticky lg:top-8" aria-label="Resumen del pedido" [attr.aria-busy]="store.checking()">
+      <p class="text-sm text-muted">{{ store.catalog()?.name }}</p>
+      <h2 class="mt-6 text-sm font-semibold">Total estimado</h2>
+      <p class="mt-2 break-words text-3xl font-semibold tracking-[-.02em] tabular-nums">{{ price(store.total()) }}</p>
+      <p class="mt-4 text-xs leading-6 text-muted">Precios guardados en este dispositivo. Los comprobaremos con el catálogo actual antes de preparar el mensaje.</p>
+      <button type="button" class="brand-button mt-6 w-full px-4" [disabled]="store.checking() || invalid()" (click)="store.prepare()">{{ store.checking() ? 'Verificando catálogo…' : store.changes().length ? 'Revisé los cambios: verificar de nuevo' : 'Preparar mensaje de WhatsApp' }}</button>
+      @if (invalid()) { <p role="alert" class="mt-4 text-sm text-unavailable-ink">Corrige las cantidades antes de continuar.</p> }
+    </aside>
+  </div>
+  @if (store.notice()) { <p role="status" class="mt-6 rounded-md bg-image p-5 text-sm leading-6">{{ store.notice() }}</p> }
+  @if (store.changes().length || store.blocked().length) {
+    <section class="mt-8 border-t border-line pt-7" aria-labelledby="order-changes">
+      <h2 id="order-changes" class="text-2xl font-semibold tracking-[-.02em]">Revisa tu selección</h2>
+      <ul class="mt-4 list-disc space-y-3 pl-5 text-sm leading-6">
+        @for (change of store.changes(); track $index) { <li>{{ change }}</li> }
+        @for (reason of store.blocked(); track $index) { <li class="font-semibold text-unavailable-ink">{{ reason }}</li> }
+      </ul>
+      <p class="mt-4 text-sm leading-6 text-muted">Las líneas y los totales muestran ahora los datos actualizados. No se ha preparado ningún enlace.</p>
+    </section>
+  }
+  @if (store.draft(); as draft) {
+    <section class="mt-10 border-t border-line pt-7" aria-labelledby="message-heading">
+      <h2 id="message-heading" class="text-2xl font-semibold tracking-[-.02em]">Mensaje para el negocio</h2>
+      <p class="my-4 max-w-prose text-sm leading-7 text-muted">Abrir WhatsApp solo prepara una conversación. El pedido no ha sido enviado ni confirmado. Tu lista se conserva.</p>
+      <label class="block text-sm font-semibold" for="order-message">Mensaje completo</label>
+      <textarea id="order-message" readonly rows="12" class="mt-3 w-full rounded-md border border-input-border bg-surface p-4 text-base leading-7 lg:text-sm" [value]="draft.message"></textarea>
+      @if (draft.tooLong) { <p role="status" class="my-4 max-w-prose text-sm leading-6 text-muted">El pedido supera el tamaño de enlace admitido por Lumio. Copia el mensaje completo y pégalo en el chat; no se ha recortado ninguna línea.</p> }
+      <div class="mt-5 flex flex-wrap gap-3">
+        <button type="button" class="secondary-button" (click)="copy()">Copiar mensaje completo</button>
+        @if (draft.url || draft.chatUrl; as url) { <a class="brand-button" [href]="url" target="_blank" rel="noopener noreferrer" (click)="store.opened.set(true)">{{ draft.tooLong ? 'Abrir chat para pegar el mensaje' : 'Abrir WhatsApp con el mensaje' }}<app-ui-icon name="external" /></a> }
+      </div>
+      <p role="status" class="mt-3 text-sm">{{ copyMessage() }}</p>
+      @if (store.opened()) { <p role="status" class="mt-3 text-sm leading-6 text-muted">Se abrió el enlace de WhatsApp. Esto no confirma el envío ni la aceptación del pedido.</p> }
+    </section>
+  }
+}

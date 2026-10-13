@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Keep Odoo's form, POST, CSRF, errors and authentication controllers. -->
+    <template id="login_layout" inherit_id="website.login_layout" name="Lumio · Solo formulario de acceso" priority="100">
+        <xpath expr="//t[@t-call='website.layout']" position="replace">
+            <t t-call="web.frontend_layout">
+                <t t-set="no_header" t-value="True"/>
+                <t t-set="no_footer" t-value="True"/>
+                <t t-set="body_classname" t-value="'bg-white'"/>
+                <div class="container py-5">
+                    <div class="mx-auto" style="max-width: 360px;">
+                        <t t-out="0"/>
+                    </div>
+                </div>
+            </t>
+        </xpath>
+    </template>
+    <template id="login_form" inherit_id="web.login" name="Lumio · Acceso directo" priority="100">
+        <xpath expr="//owl-component[@name='web.user_switch']" position="replace"/>
+        <xpath expr="//form" position="attributes">
+            <attribute name="t-attf-class">oe_login_form</attribute>
+        </xpath>
+        <xpath expr="//label[@for='login']" position="replace">
+            <label for="login" class="form-label d-flex justify-content-between">Username</label>
+        </xpath>
+        <xpath expr="//input[@name='login']" position="attributes">
+            <attribute name="placeholder">Username</attribute>
+            <attribute name="t-att-value">login or request.env['ir.config_parameter'].sudo().get_param('lumio.admin_login', '')</attribute>
+        </xpath>
+        <xpath expr="//button[hasclass('o_show_password')]" position="attributes">
+            <attribute name="aria-label">Show or hide password</attribute>
+        </xpath>
+        <xpath expr="//div[@id='oe_structure_login_top']" position="replace"/>
+        <xpath expr="//div[@id='oe_structure_login_bottom']" position="replace"/>
+        <xpath expr="//div[hasclass('oe_login_buttons')]/t[@t-if='debug']" position="replace"/>
+        <xpath expr="//t[@t-call='web.login_oauth']" position="replace"/>
+    </template>
+    <template id="login_links" inherit_id="auth_signup.login" name="Lumio · Sin enlaces comerciales en acceso" priority="100">
+        <xpath expr="//a[contains(@t-attf-href, '/web/signup')]" position="replace"/>
+        <xpath expr="//a[contains(@t-attf-href, '/web/reset_password')]" position="replace"/>
+    </template>
+</odoo>
