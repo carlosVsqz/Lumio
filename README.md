@@ -46,6 +46,8 @@ La configuración local `.env` y sus volúmenes permanecen independientes. Produ
 
 Si un arranque previo de Odoo dejó únicamente sus tablas técnicas `orm_signaling_*`, bootstrap completa la instalación sobre el mismo volumen, comprobando nombres y estructura. Las bases con tablas ajenas se conservan y bloquean la inicialización; consulta el diagnóstico de `odoo-init` en la guía antes de modificar datos.
 
+Si ambos dominios responden `404 page not found`, ejecuta `sh scripts/Diagnose-LumioRouting.sh <proyecto-compose>` desde SSH del VPS y consulta la guía de Dokploy. El diagnóstico comprueba servicios, redes, reglas de Traefik y HTTP interno sin imprimir credenciales. Las URLs del entorno no registran dominios: ese enrutamiento se configura en Domains de Dokploy.
+
 ### Tienda demo local con Odoo real
 
 Desde PowerShell 7 en la raíz, con Docker y Node instalados:

@@ -75,6 +75,25 @@ Activa Isolated Deployments y verifica Preview Compose, la red común, DNS al se
 
 La regla WebSocket específica debe prevalecer sobre `/`. No asignes dominios ni puertos del host a Java/PostgreSQL o a las tareas. El manager/listado de bases debe permanecer bloqueado. Nginx resuelve Java durante las peticiones para soportar cambios de IP y propaga HTTPS hacia el backend. Los seis servicios declaran explícitamente la red `backend`, cuyo nombre Compose delimita por proyecto. En Preview Compose conserva esa red para todos; Odoo y Nginx también deben acceder a la red que Dokploy/Traefik agregue para sus dominios.
 
+## Ambos dominios devuelven `404 page not found`
+
+Un `404` con ese texto plano es compatible con una petición sin router coincidente en Traefik. Los puertos de esta aplicación son 80 para `lm-storefront`, 8069 para Odoo y 8072 para WebSocket. `PUBLIC_SITE_URL` y `ODOO_PUBLIC_URL` configuran SEO/identidad; **no registran dominios o routers en Dokploy**. Las etiquetas de Traefik llegan desde Domains al desplegar y no están duplicadas en el Compose del repositorio.
+
+Desde SSH del VPS, ejecuta el diagnóstico usando el nombre real del proyecto:
+
+```sh
+sh scripts/Diagnose-LumioRouting.sh lumio-app-foi4r6
+```
+
+El script no cambia contenedores o redes ni imprime Environment, claves, cookies o etiquetas de autenticación. Muestra estado/health/exit/OOM, redes, reglas HTTP/puertos de Traefik y respuesta HTTP dentro de cada servicio. Si el proxy tiene otro nombre, pásalo mediante `LUMIO_PROXY_CONTAINER`. No ejecutes Docker Inspect completo al compartir resultados: puede incluir contraseñas de Environment.
+
+- Si Odoo/Nginx no están activos o saludables, revisa primero `odoo-init`, conectividad a PostgreSQL y `storefront-build`. Un despliegue bloqueado puede no ofrecer routers activos.
+- Si HTTP interno responde pero faltan etiquetas, configura los destinos de la tabla en Domains y despliega. No apuntes al servicio `storefront-build` ni a `odoo-init`.
+- Si existen etiquetas, verifica que `Host(...)` contenga solo el hostname esperado, Path `/`, Strip Path desactivado, HTTPS/entrypoint correctos y que el proxy comparta la red seleccionada en `traefik.docker.network` con el contenedor. Preview Compose debe conservar `backend` además de la red de acceso.
+- Si el origen funciona y solo falla a través de Cloudflare, revisa que los registros apunten al VPS correcto y que el modo SSL coincida con HTTPS del origen. Usa Full (strict) cuando el origen tenga un certificado válido; una petición HTTPS del navegador no demuestra que Cloudflare esté llegando al origen por HTTPS.
+
+Fuentes: [404 y routers de Traefik](https://doc.traefik.io/traefik/getting-started/faq/), [etiquetas generadas por Dokploy](https://docs.dokploy.com/docs/core/docker-compose/domains), [SSL Full (strict) de Cloudflare](https://developers.cloudflare.com/ssl/origin-configuration/ssl-modes/full-strict/). El diagnóstico identifica la capa responsable; no introduce routers manuales que compitan con los definidos en Dokploy ni publica puertos del host para sortear el proxy.
+
 ## Error DNS interno `could not translate host name "odoo-db"`
 
 Este error ocurre antes de autenticar o consultar PostgreSQL: Odoo no pudo resolver el nombre del servicio. Puede deberse a redes distintas, ausencia de un endpoint/alias o problemas del DNS embebido de Docker durante la saturación del servidor. Un timeout del cron por sí solo no identifica la causa del DNS ni demuestra falta de RAM.
