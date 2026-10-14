@@ -15,6 +15,7 @@ class ProductionConfigurationTest(unittest.TestCase):
         self.assertEqual(options['proxy_mode'], 'True')
         self.assertEqual(options['workers'], '2')
         self.assertEqual(options['gevent_port'], '8072')
+        self.assertEqual(options['http_interface'], '0.0.0.0')
 
     def test_refuses_demo_and_multiple_database_selection(self):
         for database in ['lumio_demo', 'foo,bar', 'foo.*', '', 'bad\nname']:

@@ -4,7 +4,10 @@ COPY gradlew settings.gradle build.gradle ./
 COPY gradle ./gradle
 COPY lm-core/build.gradle ./lm-core/build.gradle
 COPY lm-core/src ./lm-core/src
-RUN chmod +x gradlew && ./gradlew :lm-core:build --no-daemon
+RUN chmod +x gradlew && ./gradlew :lm-core:build --no-daemon --max-workers=1 \
+    -Dorg.gradle.parallel=false \
+    '-Dorg.gradle.jvmargs=-Xmx512m -XX:MaxMetaspaceSize=256m -XX:ActiveProcessorCount=2' \
+    -PlumioTestMaxHeap=384m
 FROM eclipse-temurin:21-jre
 WORKDIR /app
 RUN groupadd --system lumio && useradd --system --gid lumio lumio

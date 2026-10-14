@@ -28,7 +28,7 @@ def runtime_options(environment):
         'list_db': 'False', 'proxy_mode': 'True',
         'data_dir': '/var/lib/odoo',
         'addons_path': '/usr/lib/python3/dist-packages/odoo/addons,/mnt/lumio-addons',
-        'http_port': '8069', 'gevent_port': '8072', 'log_level': 'warn',
+        'http_interface': '0.0.0.0', 'http_port': '8069', 'gevent_port': '8072', 'log_level': 'warn',
     }
     for variable, option, minimum, maximum, default in (
         ('ODOO_WORKERS', 'workers', 1, 64, 2),

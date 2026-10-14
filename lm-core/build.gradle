@@ -32,4 +32,9 @@ dependencies {
 
 tasks.named('test') {
 	useJUnitPlatform()
+	maxParallelForks = 1
+	maxHeapSize = providers.gradleProperty('lumioTestMaxHeap').getOrElse('512m')
+	if (providers.gradleProperty('lumioTestMaxHeap').isPresent()) {
+		jvmArgs '-XX:ActiveProcessorCount=2'
+	}
 }

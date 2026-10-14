@@ -18,6 +18,7 @@ x-odoo-environment: &odoo-environment
 
 services:
   odoo-db:
+    networks: [backend]
     image: ${POSTGRES_IMAGE:-postgres:17}
     environment:
       POSTGRES_DB: postgres
@@ -43,6 +44,7 @@ services:
     stop_grace_period: 60s
 
   odoo-init:
+    networks: [backend]
     build:
       context: ./infrastructure/odoo
     command: [python3, /opt/lumio/bootstrap.py]
@@ -72,6 +74,7 @@ services:
     logging: *logging
 
   odoo:
+    networks: [backend]
     build:
       context: ./infrastructure/odoo
     environment: *odoo-environment
@@ -90,6 +93,7 @@ services:
     stop_grace_period: 60s
 
   lm-core:
+    networks: [backend]
     build:
       context: .
       dockerfile: lm-core/Dockerfile
@@ -136,6 +140,7 @@ services:
     stop_grace_period: 30s
 
   storefront-build:
+    networks: [backend]
     build:
       context: .
       dockerfile: infrastructure/dokploy/Dockerfile.storefront
@@ -144,18 +149,22 @@ services:
       PUBLIC_SITE_URL: ${PUBLIC_SITE_URL:?Configure the HTTPS storefront origin}
       CATALOG_BUILD_API_URL: http://lm-core:8080/graphql
       STATIC_OUTPUT_DIRECTORY: /static
-      NODE_OPTIONS: --max-old-space-size=1536
+      NODE_OPTIONS: --max-old-space-size=${LUMIO_BUILD_HEAP_MB:-1024}
+      NG_BUILD_MAX_WORKERS: ${LUMIO_BUILD_WORKERS:-1}
+      NG_BUILD_PARALLEL_TS: "0"
     depends_on:
       lm-core:
         condition: service_healthy
     volumes:
       - storefront-static:/static
     mem_limit: ${LUMIO_BUILD_MEMORY:-2g}
+    cpus: ${LUMIO_BUILD_CPUS:-1.0}
     init: true
     restart: "no"
     logging: *logging
 
   lm-storefront:
+    networks: [backend]
     build:
       context: .
       dockerfile: infrastructure/dokploy/Dockerfile.storefront
@@ -176,6 +185,12 @@ services:
     mem_limit: ${LUMIO_STOREFRONT_MEMORY:-128m}
     restart: unless-stopped
     logging: *logging
+
+networks:
+  # Explicit membership survives domain services receiving an additional Dokploy network.
+  # Compose scopes the bridge and service DNS aliases to the application project.
+  backend:
+    driver: bridge
 
 volumes:
   odoo-db-data:

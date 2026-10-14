@@ -42,6 +42,27 @@ El logo procede del sitio Odoo; `LUMIO_LOGO_URL` vacío significa que no hay res
 
 Requisitos de despliegue: Docker Compose >= 2.23.1, builder Linux y memoria disponible para Odoo, Java, PostgreSQL y el build Angular. Ajusta `LUMIO_BUILD_MEMORY` y los límites de servicios a tu servidor; los valores iniciales no constituyen una medición de capacidad. No necesitas Node instalado en el host ni un registro de imágenes.
 
+## Consumo durante el despliegue
+
+Los límites actuales pueden sumar **5,375 GiB** con Odoo (2 GiB), build Angular (2 GiB), Java (768 MiB), PostgreSQL (512 MiB) y Nginx (128 MiB). Son máximos por contenedor, no una reserva ni una medición de uso. Se necesita además margen para Linux, Docker, Dokploy, otros proyectos y las imágenes que se están construyendo. Un VPS con menos memoria libre puede agotar RAM o pasar a swap; antes de ajustar los límites revisa la capacidad y el uso real.
+
+El build Java limita Gradle a un worker, heap de 512 MiB, metaspace de 256 MiB y tests en un único proceso con heap de 384 MiB. Estos heaps no incluyen toda la memoria nativa. La tarea Angular usa por defecto `LUMIO_BUILD_WORKERS=1`, compilación TypeScript sin worker paralelo, heap `LUMIO_BUILD_HEAP_MB=1024` y cuota `LUMIO_BUILD_CPUS=1.0`. Mantén margen entre heap y `LUMIO_BUILD_MEMORY`; el heap de Node no es el consumo total del contenedor. Estos ajustes reducen concurrencia y pueden alargar el despliegue.
+
+**Los `mem_limit`/`cpus` del Compose limitan contenedores en ejecución, no los pasos `RUN` de BuildKit.** `COMPOSE_PARALLEL_LIMIT=1` limita operaciones del cliente Compose; algunas versiones que delegan builds a Bake no lo trasladan al solver. Si el pico ocurre al construir imágenes, configura el builder que ya utiliza Dokploy con `max-parallelism = 1` y su presupuesto de CPU/RAM; no basta con cambiar el límite de `storefront-build`. La [documentación de BuildKit](https://docs.docker.com/build/buildkit/configure/#max-parallelism) explica cómo aplicar ese límite según el driver, y [Docker documenta RAM, CPU y swap](https://docs.docker.com/engine/containers/resource_constraints/). No se crea ni modifica automáticamente un builder del servidor.
+
+`core-entrypoint.sh` espera al proceso Java y comprueba el hash de la configuración cada segundo. Solo reinicia Java si cambió el archivo; un fallo con la configuración estable termina el supervisor y se aplica la política de reinicio de Docker. Para confirmar un cuelgue del VPS, usa la consola/SSH del servidor y recopila:
+
+```sh
+free -h
+uptime
+docker stats --no-stream
+df -h
+vmstat 1 5
+sudo journalctl -k --since "1 hour ago" | rg -i 'out of memory|oom|killed process'
+```
+
+Si no está disponible `rg`, usa `grep -Ei` para el último filtro. RAM libre muy baja con actividad de swap, eventos OOM, disco lleno, espera de I/O o CPU sostenida requieren respuestas diferentes; sin esas métricas no se puede atribuir el cuelgue a Lumio. Si el despliegue sigue activo durante la saturación, cancélalo en Dokploy y recopila métricas antes de reintentarlo; conserva los volúmenes de datos.
+
 ## Dominios en Dokploy
 
 Activa Isolated Deployments y verifica Preview Compose, la red común, DNS al servidor correcto y HTTPS/Let's Encrypt:
@@ -52,7 +73,24 @@ Activa Isolated Deployments y verifica Preview Compose, la red común, DNS al se
 | `lumio-odoo.escod.com.gt` | `odoo` | 8069 | `/` | No |
 | `lumio-odoo.escod.com.gt` | `odoo` | 8072 | `/websocket` | No |
 
-La regla WebSocket específica debe prevalecer sobre `/`. No asignes dominios ni puertos del host a Java/PostgreSQL o a las tareas. El manager/listado de bases debe permanecer bloqueado. Nginx resuelve Java durante las peticiones para soportar cambios de IP y propaga HTTPS hacia el backend.
+La regla WebSocket específica debe prevalecer sobre `/`. No asignes dominios ni puertos del host a Java/PostgreSQL o a las tareas. El manager/listado de bases debe permanecer bloqueado. Nginx resuelve Java durante las peticiones para soportar cambios de IP y propaga HTTPS hacia el backend. Los seis servicios declaran explícitamente la red `backend`, cuyo nombre Compose delimita por proyecto. En Preview Compose conserva esa red para todos; Odoo y Nginx también deben acceder a la red que Dokploy/Traefik agregue para sus dominios.
+
+## Error DNS interno `could not translate host name "odoo-db"`
+
+Este error ocurre antes de autenticar o consultar PostgreSQL: Odoo no pudo resolver el nombre del servicio. Puede deberse a redes distintas, ausencia de un endpoint/alias o problemas del DNS embebido de Docker durante la saturación del servidor. Un timeout del cron por sí solo no identifica la causa del DNS ni demuestra falta de RAM.
+
+Dokploy puede agregar una red a los servicios con dominio; depender únicamente de la red implícita puede separar Odoo de PostgreSQL. La red explícita `backend` conserva la comunicación interna mientras Dokploy agrega su red de acceso. Comprueba el Compose efectivo con Preview Compose y los endpoints reales desde SSH, sustituyendo nombres si cambió el proyecto:
+
+```sh
+docker inspect --format '{{json .NetworkSettings.Networks}}' lumio-app-foi4r6-odoo-1 lumio-app-foi4r6-odoo-db-1
+docker exec lumio-app-foi4r6-odoo-1 getent hosts odoo-db
+docker exec lumio-app-foi4r6-odoo-1 cat /etc/resolv.conf
+docker inspect --format '{{.State.Status}} OOMKilled={{.State.OOMKilled}} RestartCount={{.RestartCount}}' lumio-app-foi4r6-odoo-db-1
+```
+
+Ambos contenedores deben compartir una red y PostgreSQL debe tener el alias `odoo-db` en ella. Si no la comparten, despliega el Compose corregido conservando proyecto y volúmenes. Si ya la comparten y la resolución sigue fallando, revisa los eventos/logs de Docker y las métricas del VPS antes de reiniciar el daemon, que afecta a todas las aplicaciones. Los resolvers públicos como `1.1.1.1` no conocen nombres internos como `odoo-db`; no cambies `HOST` por una IP de contenedor que podría cambiar al recrearlo. Consulta [las redes y dominios de Dokploy](https://docs.dokploy.com/docs/core/docker-compose/domains) y [el DNS de Compose](https://docs.docker.com/compose/how-tos/networking/).
+
+El aviso sobre `http_interface` queda resuelto declarando `0.0.0.0` explícitamente en la configuración Odoo; no era la causa del fallo DNS. No se aumenta el timeout del cron para ocultar esta pérdida de conectividad.
 
 ## Actualizaciones, verificación y backups
 
