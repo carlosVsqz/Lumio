@@ -44,6 +44,8 @@ Las tareas `odoo-init` y `storefront-build` terminan después de preparar sus re
 
 La configuración local `.env` y sus volúmenes permanecen independientes. Producción usa `https://lumio-catalog.escod.com.gt` y `https://lumio-odoo.escod.com.gt`; los valores privados se guardan en `.env.production` y en **Environment** de Dokploy. No hay perfiles ni preparación por partes: con clave API e IDs vacíos el Compose prepara todo automáticamente. La base nueva usa español, logo L y moneda inicial `LUMIO_CURRENCY=GTQ`, sin cargar productos, stock o campañas de demostración. La guía explica los tres destinos HTTPS, incluido el WebSocket de Odoo; WhatsApp requiere el número real del negocio.
 
+Si un arranque previo de Odoo dejó únicamente sus tablas técnicas `orm_signaling_*`, bootstrap completa la instalación sobre el mismo volumen, comprobando nombres y estructura. Las bases con tablas ajenas se conservan y bloquean la inicialización; consulta el diagnóstico de `odoo-init` en la guía antes de modificar datos.
+
 ### Tienda demo local con Odoo real
 
 Desde PowerShell 7 en la raíz, con Docker y Node instalados:

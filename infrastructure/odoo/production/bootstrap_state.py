@@ -5,6 +5,27 @@ import re
 import tempfile
 
 
+# Odoo 19 Registry.setup_signaling() commits these before loading its base module.
+# Starting Odoo without --init can therefore leave them in an uninitialized database.
+SIGNALING_TABLES = frozenset('orm_signaling_' + name for name in (
+    'registry', 'default', 'assets', 'stable', 'templates', 'routing', 'groups'))
+SIGNALING_COLUMNS = [('id', 'integer', 'NO'), ('date', 'timestamp without time zone', 'YES')]
+
+
+def needs_initialization(tables, columns):
+    tables = set(tables)
+    if not tables:
+        return True
+    if 'ir_module_module' in tables:
+        return False
+    if tables <= SIGNALING_TABLES and all(columns.get(table) == SIGNALING_COLUMNS for table in tables):
+        return True
+    unexpected = ', '.join(sorted(tables - SIGNALING_TABLES)) or 'invalid orm_signaling_* structure'
+    raise ValueError('Existing database is not an Odoo database; no data were changed. '
+        'Unexpected tables/structure: ' + unexpected + '. Verify ODOO_DATABASE and inspect the public schema; '
+        'do not delete volumes to retry.')
+
+
 def select_id(records, configured, label):
     if configured:
         if not re.fullmatch(r'[1-9][0-9]*', configured):

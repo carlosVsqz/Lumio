@@ -8,7 +8,7 @@ import re
 import subprocess
 from urllib.parse import urlsplit
 import psycopg2
-from bootstrap_state import read_settings, select_id, write_settings
+from bootstrap_state import needs_initialization, read_settings, select_id, write_settings
 
 MODULES = 'website_sale,website_sale_stock,lumio_campaign,lumio_storefront'
 STATE = Path('/var/lib/lumio-integration')
@@ -146,19 +146,24 @@ def main():
         lock.autocommit = True
         with lock.cursor() as cursor:
             cursor.execute("SELECT pg_advisory_lock(hashtext('lumio-bootstrap'))")
-            cursor.execute("SELECT EXISTS (SELECT 1 FROM pg_tables WHERE schemaname='public')")
-            empty = not cursor.fetchone()[0]
-            cursor.execute("SELECT to_regclass('public.ir_module_module')")
-            if not empty and not cursor.fetchone()[0]:
-                raise ValueError('Existing database is not an Odoo database; no data were changed')
+            cursor.execute("SELECT tablename FROM pg_tables WHERE schemaname='public' ORDER BY tablename")
+            tables = [row[0] for row in cursor.fetchall()]
+            columns = {}
+            if tables and 'ir_module_module' not in tables:
+                cursor.execute("SELECT table_name, column_name, data_type, is_nullable "
+                    "FROM information_schema.columns WHERE table_schema='public' "
+                    "ORDER BY table_name, ordinal_position")
+                for table, name, datatype, nullable in cursor.fetchall():
+                    columns.setdefault(table, []).append((name, datatype, nullable))
+            initial = needs_initialization(tables, columns)
             if pending.exists() and json.loads(pending.read_text()) != {'database':database}:
                 raise ValueError('Bootstrap state belongs to a different database')
-            fresh = empty or pending.exists()
-            if empty:
+            fresh = initial or pending.exists()
+            if initial:
                 pending.write_text(json.dumps({'database':database}))
                 pending.chmod(0o600)
             missing_modules = True
-            if not empty:
+            if not initial:
                 cursor.execute('SELECT name FROM ir_module_module WHERE state = %s AND name = ANY(%s)', ('installed', MODULES.split(',')))
                 missing_modules = len(cursor.fetchall()) != len(MODULES.split(','))
         if missing_modules:

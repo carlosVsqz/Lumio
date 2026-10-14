@@ -64,4 +64,18 @@ Haz dumps PostgreSQL consistentes y copias coordinadas del filestore `/var/lib/o
 
 Comprueba los cuatro servicios saludables y las dos tareas terminadas con código 0, login español, GraphQL, logo/imágenes, HTML de una ficha, canonical/sitemap, variantes, filtros/favoritos/pedido y WebSocket. Una instalación vacía debe mostrar resultados vacíos reales, sin productos demo. Verifica una segunda ejecución con datos existentes y fallos de API en staging.
 
+## Diagnóstico de `odoo-init`
+
+`service "odoo-init" didn't complete successfully: exit 1` es el resumen de Compose. Abre los logs de `odoo-init` en Dokploy para obtener la causa concreta; no compartas Environment, archivos `.env` ni claves.
+
+Odoo 19 puede crear siete tablas técnicas `orm_signaling_*` al arrancar antes de instalar `base`, sin crear aún `ir_module_module`. El inicializador reconoce exclusivamente esos nombres y su estructura `id INTEGER` / `date TIMESTAMP`, y completa la primera instalación sobre el mismo volumen sin borrar tablas. Una versión anterior de Lumio rechazaba ese estado con `Existing database is not an Odoo database`; despliega el código corregido conservando los volúmenes.
+
+Si falta `ir_module_module` y existen otras tablas o estructuras diferentes, se detiene y muestra los nombres inesperados. Verifica `ODOO_DATABASE` en Environment y consulta los nombres desde la terminal de `odoo-db`, sin modificar datos:
+
+```sh
+psql -U "$POSTGRES_USER" -d "$ODOO_DATABASE" -c "SELECT tablename FROM pg_tables WHERE schemaname='public' ORDER BY tablename;"
+```
+
+No utilices `down -v`, borres tablas ni fuerces la inicialización sobre una base de otro sistema. Si el nombre era incorrecto, selecciona la base Odoo real y vuelve a desplegar. La recuperación automática de tablas técnicas se basa en el [registro oficial de Odoo 19](https://github.com/odoo/odoo/blob/19.0/odoo/orm/registry.py).
+
 Fuentes: [Dokploy Compose](https://docs.dokploy.com/docs/core/docker-compose), [dependencias y tareas completadas de Compose](https://docs.docker.com/reference/compose-file/services/#depends_on), [producción Odoo 19](https://www.odoo.com/documentation/19.0/es_419/administration/on_premise/deploy.html).
