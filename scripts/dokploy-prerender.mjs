@@ -1,8 +1,9 @@
 import {spawn} from 'node:child_process';
-import {readFile, readdir} from 'node:fs/promises';
-import {join} from 'node:path';
+import {cp, mkdir, readFile, readdir, readlink, rename, rm, symlink} from 'node:fs/promises';
+import {join, resolve} from 'node:path';
+import {randomUUID} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
-import {releaseConfiguration, publicBuildEnvironment} from './release-config.mjs';
+import {httpsOrigin, publicBuildEnvironment} from './release-config.mjs';
 
 export async function waitForCatalog(origin, stopped, {fetcher=fetch, timeoutMs=120000, pauseMs=1000} = {}) {
   const deadline = Date.now() + timeoutMs;
@@ -17,13 +18,11 @@ export async function waitForCatalog(origin, stopped, {fetcher=fetch, timeoutMs=
         const body = await response.json();
         if (!response.ok || body.errors?.length || !body.data?.catalog || !Array.isArray(body.data.items)) throw new Error();
         return;
-      } catch {
-        throw new Error('Odoo no entregó el catálogo: comprueba ODOO_BUILD_URL, clave API, permisos, IDs y conectividad. Build cancelado.');
-      }
+      } catch { /* Backend may be restarting after private integration settings changed. */ }
     }
     await new Promise(complete => setTimeout(complete, pauseMs));
   }
-  throw new Error('La API Java temporal no estuvo disponible en dos minutos. Build cancelado.');
+  throw new Error('Odoo no entregó el catálogo a través de GraphQL dentro del tiempo de espera. No se publican archivos estáticos.');
 }
 
 export async function verifyPublicArtifact(directory, key) {
@@ -36,36 +35,48 @@ export async function verifyPublicArtifact(directory, key) {
   }
 }
 
-async function main() {
-  let server;
+export async function publishStatic(source, directory) {
+  const root = resolve(directory), id = randomUUID();
+  const releases = join(root, 'releases'), release = join(releases, id), next = join(root, '.current-' + id);
+  let previous = '';
+  try { previous = await readlink(join(root, 'current')); } catch (error) { if (error.code !== 'ENOENT') throw error; }
+  await mkdir(releases, {recursive:true});
   try {
-    const key = await readFile('/run/secrets/odoo_api_key', 'utf8');
-    const configuration = releaseConfiguration({...process.env, ODOO_API_KEY:key});
-    const origin = 'http://127.0.0.1:8080';
-    const frontendEnvironment = publicBuildEnvironment(process.env, origin + '/graphql', configuration.publicUrl);
-    const serverEnvironment = {...publicBuildEnvironment(process.env, '', ''), ...configuration.coreEnvironment,
-      PORT:'8080', SERVER_ADDRESS:'127.0.0.1', JAVA_TOOL_OPTIONS:'-Xmx512m', LOGGING_LEVEL_ROOT:'ERROR'};
-    let stopped = false;
-    server = spawn('java', ['-jar', '/opt/lumio/app.jar'], {env:serverEnvironment, stdio:'ignore'});
-    server.on('error', () => { stopped = true; }); server.on('exit', () => { stopped = true; });
-    console.log('Iniciando lm-core temporal para consultar el Odoo configurado y prerenderizar.');
-    await waitForCatalog(origin, () => stopped);
+    // Copy the complete verified artifact before atomically switching Nginx's current directory.
+    await cp(source, release, {recursive:true});
+    await symlink(process.platform === 'win32' ? release : 'releases/' + id, next, process.platform === 'win32' ? 'junction' : 'dir');
+    await rename(next, join(root, 'current'));
+  } catch (error) {
+    await rm(next, {force:true}); await rm(release, {recursive:true, force:true}); throw error;
+  }
+  // Retain one previous release. Never remove the current target or arbitrary paths.
+  const current = await readlink(join(root, 'current'));
+  const history = (await readdir(releases)).filter(name => /^[a-f0-9-]{36}$/.test(name)
+    && ![current, previous].some(target => target === 'releases/' + name || resolve(target) === join(releases, name)));
+  for (const name of history) await rm(join(releases, name), {recursive:true, force:true});
+}
+
+async function main() {
+  try {
+    const origin = new URL(process.env.CATALOG_BUILD_API_URL).origin;
+    const publicUrl = httpsOrigin(process.env.PUBLIC_SITE_URL, 'PUBLIC_SITE_URL');
+    const frontendEnvironment = publicBuildEnvironment(process.env, process.env.CATALOG_BUILD_API_URL, publicUrl);
+    console.log('Esperando GraphQL real para compilar el escaparate estático.');
+    await new Promise(complete => setTimeout(complete, 2000));
+    await waitForCatalog(origin, () => false);
     const code = await new Promise((complete, reject) => {
       const child = spawn(process.execPath, ['scripts/build-static.mjs'], {env:frontendEnvironment, stdio:'inherit'});
       child.on('error', () => reject(new Error('No se pudo iniciar el build estático Angular.'))); child.on('exit', complete);
     });
     if (code !== 0) throw new Error('Angular no completó el prerenderizado.');
-    await verifyPublicArtifact('dist/lm-storefront/browser', key);
-    console.log('Prerenderizado verificado; únicamente los archivos estáticos pasan a la imagen Nginx.');
+    const output = 'dist/lm-storefront/browser';
+    const marker = JSON.parse(await readFile(join(output, 'static-build.json'), 'utf8'));
+    if (marker.publicUrl !== publicUrl) throw new Error('El artefacto no corresponde al dominio público configurado.');
+    await publishStatic(output, process.env.STATIC_OUTPUT_DIRECTORY);
+    console.log('Escaparate verificado y publicado de forma atómica. La tarea Node termina; Nginx sirve archivos estáticos.');
   } catch (error) {
     console.error('BUILD DOKPLOY FALLIDO: ' + error.message);
     process.exitCode = 1;
-  } finally {
-    if (server && server.exitCode === null) {
-      server.kill('SIGTERM');
-      await Promise.race([new Promise(complete => server.once('exit', complete)), new Promise(complete => setTimeout(complete, 5000))]);
-      if (server.exitCode === null) server.kill('SIGKILL');
-    }
   }
 }
 

@@ -34,9 +34,15 @@ El proxy de Angular conecta `/graphql` y `/catalog-media/**` con Spring; no se n
 
 La preparación de producción está separada de la demo: [`compose.production.yaml`](compose.production.yaml), [`.env.production.example`](.env.production.example) y la [guía completa de Dokploy](infrastructure/dokploy/README.md). **Dokploy compila directamente desde el repositorio**, usando `build` de Docker Compose; no requiere GHCR ni publicación previa de imágenes. Incluye Odoo con los addons, PostgreSQL con usuario de aplicación sin privilegios de superusuario, volúmenes persistentes, comprobaciones de salud y dominios/HTTPS administrados por Dokploy. No publica puertos de Java ni de PostgreSQL ni monta directorios del checkout.
 
-El Dockerfile de producción del escaparate utiliza la imagen Java del mismo checkout como contexto de build, inicia esa API temporal durante la compilación, consulta Odoo, ejecuta pruebas y prerenderiza Angular; la etapa final contiene únicamente Nginx y archivos estáticos. La clave de Odoo entra por un **secreto BuildKit**, no por `ARG`, y no se pasa al proceso Angular. Si la API falla, el build falla. `npm run release:build -- --env-file .env.production` es una ayuda local para ejecutar el mismo `docker compose build`; Dokploy no necesita Node instalado en su host para desplegar y no hay opción `--push`.
+Un único comando construye las imágenes, prepara PostgreSQL/Odoo, genera la integración de lectura, arranca Java, prerenderiza Angular contra GraphQL real y sirve el resultado con Nginx:
 
-La configuración local `.env` y sus volúmenes permanecen independientes. Producción usa `https://lumio-catalog.escod.com.gt` y `https://lumio-odoo.escod.com.gt`; los valores privados se guardan en `.env.production` y en **Environment** de Dokploy. La fase inicial `COMPOSE_PROFILES=odoo` permite preparar Odoo; después de configurar su clave API e IDs reales se activa `COMPOSE_PROFILES=odoo,storefront`. La guía explica la inicialización de la base vacía **sin cargar fixtures** y los tres destinos HTTPS, incluido el WebSocket de Odoo.
+```sh
+docker compose --env-file .env.production -f compose.production.yaml up -d --build --wait --wait-timeout 240
+```
+
+Las tareas `odoo-init` y `storefront-build` terminan después de preparar sus resultados; no hay servidor Node en producción. Bootstrap descubre los IDs reales y guarda la clave API en un volumen privado, accesible solo al inicializador y a Java. Angular nunca recibe credenciales. Si falla Odoo/GraphQL, no se publica un nuevo escaparate; los archivos verificados se publican de forma atómica. En despliegues posteriores se conservan usuarios, passwords y catálogo existentes, y se regeneran las páginas. `npm run release:build -- --env-file .env.production` es una ayuda opcional para construir imágenes; el arranque completo sigue siendo el comando Compose anterior.
+
+La configuración local `.env` y sus volúmenes permanecen independientes. Producción usa `https://lumio-catalog.escod.com.gt` y `https://lumio-odoo.escod.com.gt`; los valores privados se guardan en `.env.production` y en **Environment** de Dokploy. No hay perfiles ni preparación por partes: con clave API e IDs vacíos el Compose prepara todo automáticamente. La base nueva usa español, logo L y moneda inicial `LUMIO_CURRENCY=GTQ`, sin cargar productos, stock o campañas de demostración. La guía explica los tres destinos HTTPS, incluido el WebSocket de Odoo; WhatsApp requiere el número real del negocio.
 
 ### Tienda demo local con Odoo real
 
@@ -434,5 +440,3 @@ Pruebas sin credenciales: `./gradlew build` cubre transporte HTTP simulado JSON-
 No se requiere Nx ni un orquestador adicional en esta etapa. Gradle agrupa el backend y los scripts raíz coordinan el frontend.
 
 La versión SNAPSHOT se resuelve desde el repositorio oficial de Spring. Puede cambiar entre compilaciones; se usa expresamente como base de desarrollo. Gradle fija el toolchain en Java 21.
-
-
