@@ -1,4 +1,5 @@
-import { articleSeo } from '../src/app/core/seo-model.ts';
+import { articleSeo, catalogSeo } from '../src/app/core/seo-model.ts';
+import { CATALOG_PAGE_SIZE, parseCatalogQuery } from '../src/app/features/catalog/data-access/catalog-query.ts';
 import { formatMinorPrice } from '../src/app/core/money.ts';
 import { minimumItemPrice } from '../src/app/features/catalog/catalog-presentation.ts';
 
@@ -8,10 +9,14 @@ export function decodeHtml(value) {
     return named[entity] ?? String.fromCodePoint(parseInt(entity.slice(entity[2] === 'x' ? 3 : 2, -1), entity[2] === 'x' ? 16 : 10));
   });
 }
+function structuredData(html) {
+  const scripts=[...html.matchAll(/<script\b[^>]*id="lumio-structured-data"[^>]*>([\s\S]*?)<\/script>/g)];
+  if(scripts.length!==1 || !scripts[0][0].includes('type="application/ld+json"'))throw new Error('Se esperaba un único script Schema.org JSON-LD.');
+  return JSON.parse(scripts[0][1]);
+}
 export function verifyArticleHtml(html, item, catalog, origin) {
   const seo = articleSeo(item, catalog, origin);
-  const script = html.match(/<script[^>]*id="lumio-structured-data"[^>]*>([\s\S]*?)<\/script>/)?.[1];
-  const structured = script ? JSON.parse(script) : null;
+  const structured = structuredData(html);
   const title = decodeHtml(html.match(/<title>([\s\S]*?)<\/title>/)?.[1] ?? '');
   const heading = decodeHtml(html.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/)?.[1]?.replace(/<[^>]*>/g, '') ?? '').trim();
   const descriptionTag = html.match(/<meta[^>]*name="description"[^>]*>/)?.[0] ?? '';
@@ -24,4 +29,19 @@ export function verifyArticleHtml(html, item, catalog, origin) {
     || !visible.includes(normalize(item.description)) || !visible.includes(price)
     || JSON.stringify(structured) !== JSON.stringify(seo.structured)
     || !html.includes('href="' + seo.canonical + '"')) throw new Error('El HTML prerenderizado no contiene los datos y SEO esperados para ' + item.slug);
+}
+
+/** The listing schema must describe the same first batch that visitors can read without JS. */
+export function verifyCatalogHtml(html, catalog, origin) {
+  const items=catalog.items.slice(0,CATALOG_PAGE_SIZE);
+  const page={items,page:1,pageSize:CATALOG_PAGE_SIZE,totalCount:catalog.items.length,totalPages:Math.ceil(catalog.items.length/CATALOG_PAGE_SIZE),facets:[]};
+  const seo=catalogSeo(catalog,page,parseCatalogQuery(new URLSearchParams()),origin);
+  if(JSON.stringify(structuredData(html))!==JSON.stringify(seo.structured))throw new Error('El Schema.org del listado no corresponde al catálogo prerenderizado.');
+  const cards=[...html.matchAll(/<app-catalog-card\b[^>]*>([\s\S]*?)<\/app-catalog-card>/g)];
+  if(cards.length!==items.length)throw new Error('El HTML del listado no contiene la primera página de artículos.');
+  for(let index=0;index<items.length;index++) {
+    const visible=decodeHtml(cards[index][1].replace(/<[^>]*>/g,' ')).replace(/\s+/g,' ').trim();
+    if(!visible.includes(items[index].name) || !visible.includes(formatMinorPrice(minimumItemPrice(items[index]),catalog.currencyDecimals,catalog.currency)))
+      throw new Error('El listado prerenderizado no contiene el artículo y precio esperado para '+items[index].slug);
+  }
 }

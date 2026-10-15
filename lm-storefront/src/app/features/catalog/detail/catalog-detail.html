@@ -35,6 +35,16 @@
       @if (article.description) {
         <p class="mt-9 max-w-prose whitespace-pre-line text-sm leading-7">{{ article.description }}</p>
       }
+      @if (article.attributes.length) {
+        <details class="group mt-8 border-t border-line py-5">
+          <summary class="flex min-h-11 cursor-pointer items-center justify-between gap-4 text-sm font-semibold">Características <app-ui-icon name="plus" class="group-open:rotate-45" /></summary>
+          <dl class="mt-4 space-y-3 text-sm">
+            @for (attribute of article.attributes; track $index) {
+              <div><dt class="text-muted">{{ attribute.name }}</dt><dd class="mt-1">{{ attribute.value }}</dd></div>
+            }
+          </dl>
+        </details>
+      }
       @if (variant(); as selected) {
         <details class="group mt-8 border-t border-line py-5">
           <summary class="flex min-h-11 cursor-pointer items-center justify-between gap-4 text-sm font-semibold">Referencia y selección <app-ui-icon name="plus" class="group-open:rotate-45" /></summary>

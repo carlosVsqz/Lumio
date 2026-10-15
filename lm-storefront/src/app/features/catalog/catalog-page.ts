@@ -11,12 +11,17 @@ import { BrandingStore } from '../../core/branding-store';
 import { UiIcon } from '../../shared/ui/ui-icon';
 import { CatalogSearchState } from './data-access/catalog-search-state';
 import { toggleAttributeSelection } from './data-access/catalog-attributes';
+import { Seo } from '../../core/seo';
+import { catalogSeo } from '../../core/seo-model';
+import type { ResolvedCatalogHome } from './data-access/catalog-resolvers';
 @Component({ selector: 'app-catalog-page', standalone: true, imports: [CatalogFilters, CatalogCard, CatalogLoadMore, UiIcon], providers: [CatalogStore], templateUrl: './catalog-page.html', host: { class: 'block' } })
 export class CatalogPage {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   private readonly brand = inject(BrandingStore);
+  private readonly seo = inject(Seo);
+  private readonly started = signal(false);
   private readonly search = inject(CatalogSearchState);
   private readonly viewport = inject(ViewportScroller);
   private pendingScroll: [number,number] | null = null;
@@ -28,7 +33,9 @@ export class CatalogPage {
   readonly category = computed(() => this.store.catalog()?.categories.find(c => c.id === this.query().categoryId));
   readonly title = computed(() => this.category()?.name || (this.query().categoryId ? 'Categoría no disponible' : 'Todos los artículos'));
   constructor() {
-    this.store.catalog.set(this.route.snapshot.data['catalog'] ?? this.brand.catalog());
+    const initial = this.route.snapshot.data['catalog'] as ResolvedCatalogHome | null;
+    if (initial) this.store.initialize(initial, initial.query);
+    else this.store.catalog.set(this.brand.catalog());
     afterNextRender(() => {
       this.router.events.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(event => {
         if (event instanceof Scroll && event.scrollBehavior === 'manual' && this.pendingScroll) {
@@ -46,11 +53,15 @@ export class CatalogPage {
       if (!isCanonicalCatalogQuery(parameters, query)) { this.navigate(query, true); return; }
       this.store.load(query);
       });
+      this.started.set(true);
     });
     effect(() => {
       const catalog = this.store.catalog(); if (catalog) this.brand.set(catalog);
       const result = this.store.page();
-      if (!this.store.loading() && !this.store.loadingMore() && !this.store.error() && !this.store.moreError() && result && result.page !== this.query().page)
+      if (catalog) this.seo.set({...catalogSeo(catalog, this.store.error() ? null : result, this.query(), this.seo.origin),
+        ...(this.store.error() ? {noindex:true} : {}),
+      });
+      if (this.started() && !this.store.loading() && !this.store.loadingMore() && !this.store.error() && !this.store.moreError() && result && result.page !== this.query().page)
         this.navigate({...this.query(),page:result.page},true,true);
     });
   }

@@ -4,11 +4,13 @@ import { isPlatformServer } from '@angular/common';
 import { ResolveFn } from '@angular/router';
 import { firstValueFrom, timeout } from 'rxjs';
 import { CatalogApi } from './catalog-api';
-import { CatalogItem, CatalogMetadata } from './catalog.models';
+import { CatalogBrowseData, CatalogItem, CatalogMetadata } from './catalog.models';
 import { Seo } from '../../../core/seo';
-import { articleSeo } from '../../../core/seo-model';
+import { articleSeo, catalogSeo } from '../../../core/seo-model';
+import { CatalogQuery, parseCatalogQuery } from './catalog-query';
 
 export interface ResolvedDetail { catalog: CatalogMetadata; itemBySlug: CatalogItem | null }
+export interface ResolvedCatalogHome extends CatalogBrowseData {query: CatalogQuery}
 
 export const wishlistSeoResolver: ResolveFn<boolean> = async () => {
   const api=inject(CatalogApi), brand=inject(BrandingStore), seo=inject(Seo);
@@ -42,15 +44,16 @@ export const catalogDetailResolver: ResolveFn<ResolvedDetail | { error: true }> 
   }
 };
 
-export const catalogHomeResolver: ResolveFn<CatalogMetadata | null> = async () => {
+export const catalogHomeResolver: ResolveFn<ResolvedCatalogHome | null> = async route => {
   const api = inject(CatalogApi), seo = inject(Seo), state = inject(TransferState), brand = inject(BrandingStore);
   const server = isPlatformServer(inject(PLATFORM_ID));
-  const key = makeStateKey<CatalogMetadata | null>('lumio.home');
+  const key = makeStateKey<ResolvedCatalogHome | null>('lumio.home.browse');
   try {
-    const data = state.get(key, null) ?? await firstValueFrom(api.metadata().pipe(timeout(15000)));
+    const query = {...parseCatalogQuery(route.queryParamMap), page: 1};
+    const data = state.get(key, null) ?? {...await firstValueFrom(api.browse(query).pipe(timeout(15000))),query};
     if (server) state.set(key, data); else state.remove(key);
-    brand.set(data);
-    seo.set({ title:data.name, description:data.description || `Catálogo de ${data.name}`, canonical:seo.origin + '/' });
+    brand.set(data.catalog);
+    seo.set(catalogSeo(data.catalog, data.itemPage, data.query, seo.origin));
     return data;
   } catch (cause) {
     if (server) throw new Error('Falló el prerenderizado del inicio: comprueba lm-core y CATALOG_BUILD_API_URL.', {cause});

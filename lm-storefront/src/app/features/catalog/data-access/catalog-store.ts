@@ -2,7 +2,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { EMPTY, Subject, catchError, concatWith, expand, of, switchMap, tap } from 'rxjs';
 import { CatalogApi } from './catalog-api';
-import { CatalogAttributeFacet, CatalogItemPage, CatalogMetadata } from './catalog.models';
+import { CatalogAttributeFacet, CatalogBrowseData, CatalogItemPage, CatalogMetadata } from './catalog.models';
 import { CatalogQuery } from './catalog-query';
 import { appendCatalogPage, sameCatalogFilters } from './catalog-feed';
 
@@ -54,6 +54,12 @@ export class CatalogStore {
       if (data !== null) return;
       this.loading.set(false); this.loadingMore.set(false);
     });
+  }
+
+  initialize(data: CatalogBrowseData, query: CatalogQuery) {
+    this.activeQuery = query;
+    this.catalog.set(data.catalog);this.page.set(appendCatalogPage(null,data.itemPage,1));this.facets.set(data.itemPage.facets);
+    this.loading.set(false);
   }
 
   load(query: CatalogQuery, force = false) {

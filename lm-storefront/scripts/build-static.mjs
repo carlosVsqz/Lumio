@@ -4,7 +4,7 @@ import { readFile, writeFile, rm, access } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
 import { publicSiteUrl, buildApiUrl, sitemap } from '../src/app/core/seo-model.ts';
-import { verifyArticleHtml } from './verify-html.mjs';
+import { verifyArticleHtml, verifyCatalogHtml } from './verify-html.mjs';
 import { catalogManifest, verifyPwaBuild } from './pwa-build.mjs';
 import { writeBrandAssets } from './brand-assets.mjs';
 
@@ -19,8 +19,8 @@ try {
   const response = await fetch(api, {
     method:'POST', headers:{'Content-Type':'application/json'}, signal:AbortSignal.timeout(15000),
     body:JSON.stringify({query:`query StaticBuild {
-      catalog { branding { logoUrl primaryColor } name description currency currencyDecimals whatsappNumber categories { id slug name description parentId }
-        items { id slug type name description categoryIds available images { url alt }
+      catalog { branding { logoUrl primaryColor } brandFacet { name values { value count image { url alt } } } name description currency currencyDecimals whatsappNumber categories { id slug name description parentId }
+        items { id slug type name description categoryIds available attributes { name value } images { url alt }
           variants { id slug name priceMinor available attributes { name value } }
           ${COMBO_FIELDS}
         }
@@ -48,6 +48,12 @@ try {
   for (const item of catalog.items) {
     const html = await readFile(resolve(output, 'catalogo', item.slug, 'index.html'), 'utf8');
     verifyArticleHtml(html, item, catalog, origin);
+  }
+  verifyCatalogHtml(await readFile(resolve(output,'index.html'),'utf8'),catalog,origin);
+  for(const route of ['pedido','favoritos']) {
+    const html=await readFile(resolve(output,route,'index.html'),'utf8');
+    if(html.includes('id="lumio-structured-data"') || !/<meta[^>]*name="robots"[^>]*content="noindex, follow"/.test(html))
+      throw new Error('La ruta local /'+route+' debe conservar noindex y no publicar datos del pedido o favoritos en Schema.org.');
   }
   await writeFile(resolve(output, 'sitemap.xml'), sitemap(origin, slugs));
   await writeFile(resolve(output, 'robots.txt'), 'User-agent: *\nAllow: /\nSitemap: ' + origin + '/sitemap.xml\n');

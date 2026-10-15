@@ -27,7 +27,8 @@ test('exact base plus signed extras, starting price and SEO describe a configura
   assert.equal(evaluateCombo(item,variant,{...choices,prenda:'rojo'},1).priceMinor,9750);
   assert.equal(comboStartingPrice(item,10000),9750);
   const seo=articleSeo(item,catalog,'https://lumio.example');
-  assert.equal(seo.structured['@type'],'Product');assert.equal(seo.structured.offers.lowPrice,'97.50');
+  const product=seo.structured['@graph'].find(node=>node['@type']==='Product');
+  assert.equal(product.offers.lowPrice,'97.50');
   const overflow={...item,variants:[{...variant,priceMinor:2147483647}]};
   assert.equal(evaluateCombo(overflow,overflow.variants[0],choices,1).priceMinor,null);
 });
