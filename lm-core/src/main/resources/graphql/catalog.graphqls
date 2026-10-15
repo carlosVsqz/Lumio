@@ -48,6 +48,7 @@ type CatalogItemLookup {
 }
 type Category {
   id: ID!
+  parentId: ID
   slug: String!
   name: String!
   description: String!

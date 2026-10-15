@@ -68,9 +68,11 @@ public final class OdooCatalogProvider implements CatalogProvider {
             BigDecimal rounding = number(currency.get("rounding"));
             if (decimals < 0 || decimals > 6 || rounding.signum() <= 0 || rounding.movePointRight(decimals).stripTrailingZeros().scale() > 0)
                 throw failure("PRICE", "La precisión monetaria Odoo no puede representarse en unidades menores.");
-            var categoryFields = fields("product.public.category", context, List.of("website_description"), "id", "name", "website_id");
+            var categoryFields = fields("product.public.category", context, List.of("website_description"), "id", "name", "website_id", "parent_id");
             var categoryRecords = client.search("product.public.category", siteDomain(), categoryFields, context);
-            var categories = categoryRecords.stream().map(c -> new Category("category-" + id(c), slug(text(c,"name"),id(c)), text(c,"name"), description(c))).toList();
+            var visibleCategoryIds=new HashSet<>(categoryRecords.stream().map(OdooCatalogProvider::id).toList());
+            var categories = categoryRecords.stream().map(c -> new Category("category-" + id(c), slug(text(c,"name"),id(c)), text(c,"name"), description(c),
+                visibleCategoryIds.contains(relation(c.get("parent_id"))) ? "category-"+relation(c.get("parent_id")) : null)).toList();
             var categoryIds = new HashSet<>(categories.stream().map(Category::id).toList());
             var templateFields = fields("product.template", context, List.of("website_description", "description_sale", "image_128", "product_template_image_ids", "attribute_line_ids", "combo_ids"),
                 "id", "name", "type", "active", "sale_ok", "is_published", "website_id", "public_categ_ids", "company_id");

@@ -18,6 +18,7 @@ public final class OdooStub implements AutoCloseable {
     public volatile boolean campaignSchemaAvailable=true;
     public volatile String price="12.345";
     public volatile boolean published=true;
+    public volatile boolean categoryHierarchy=false;
     public volatile boolean backorder=false;
     public volatile boolean missingFreeQty=false;
     public volatile boolean malformed=false;
@@ -65,7 +66,7 @@ public final class OdooStub implements AutoCloseable {
             for(String field:List.of("id","name","company_id","currency_id","active","decimal_places","rounding","website_id","website_description",
                 "description_sale","image_128","image_1024","image_variant_128","product_template_image_ids","type","sale_ok","is_published",
                 "public_categ_ids","display_name","product_tmpl_id","product_template_attribute_value_ids","is_storable","free_qty","uom_id",
-                "allow_out_of_stock_order","attribute_id","product_variant_id","logo","visibility","attribute_line_ids","product_template_value_ids","ptav_active","combo_ids","combo_item_ids","combo_id","product_id","extra_price","rate")) fields.put(field,Map.of("type","test"));
+                "allow_out_of_stock_order","attribute_id","product_variant_id","logo","visibility","attribute_line_ids","product_template_value_ids","ptav_active","combo_ids","combo_item_ids","combo_id","product_id","extra_price","rate","parent_id")) fields.put(field,Map.of("type","test"));
             if(missingFreeQty) fields.remove("free_qty");
             if(!logoSchemaAvailable) fields.remove("logo");
             return mapper.writeValueAsString(fields);
@@ -81,7 +82,7 @@ public final class OdooStub implements AutoCloseable {
             case "res.currency" -> request.body().path("ids").get(0).intValue()==8 ? "[{\"id\":8,\"active\":true,\"rate\":"+sourceRate+"}]" : "[{\"id\":4,\"name\":\""+currency+"\",\"decimal_places\":"+currencyDecimals+",\"rounding\":"+rounding+",\"active\":true,\"rate\":1.0}]";
             case "product.combo" -> "[{\"id\":70,\"name\":\"Prenda\",\"company_id\":7,\"combo_item_ids\":[71,72]},{\"id\":80,\"name\":\"Servicio\",\"company_id\":7,\"combo_item_ids\":[81]}]";
             case "product.combo.item" -> "[{\"id\":71,\"combo_id\":70,\"product_id\":11,\"extra_price\":2.50,\"currency_id\":4},{\"id\":72,\"combo_id\":70,\"product_id\":12,\"extra_price\":"+comboExtra+",\"currency_id\":"+comboCurrency+"},{\"id\":81,\"combo_id\":80,\"product_id\":21,\"extra_price\":0,\"currency_id\":4}]";
-            case "product.public.category" -> "[{\"id\":5,\"name\":\"Ropa\",\"website_id\":1,\"website_description\":\"<p>Prendas</p>\"}]";
+            case "product.public.category" -> categoryHierarchy ? "[{\"id\":5,\"name\":\"Ropa\",\"website_id\":1,\"parent_id\":false},{\"id\":6,\"name\":\"Camisetas\",\"website_id\":1,\"parent_id\":5},{\"id\":7,\"name\":\"Global\",\"website_id\":1,\"parent_id\":999}]" : "[{\"id\":5,\"name\":\"Ropa\",\"website_id\":1,\"website_description\":\"<p>Prendas</p>\"}]";
             case "product.template" -> read ? "["+template(request.body().path("ids").get(0).intValue())+"]" : searchTemplates(request);
             case "product.product" -> read ? "["+variant(request.body().path("ids").get(0).intValue())+"]" : searchVariants(request);
             case "product.template.attribute.value" -> "[{\"id\":31,\"name\":\"S\",\"attribute_id\":30},{\"id\":32,\"name\":\""+(duplicateCombination?"S":"M")+"\",\"attribute_id\":30}"+(classification?",{\"id\":33,\"name\":\"Algodón\",\"attribute_id\":34,\"ptav_active\":true}":"")+"]";

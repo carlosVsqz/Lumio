@@ -40,8 +40,9 @@ public final class CatalogNavigation {
         String query = search == null ? "" : search.strip();
         String normalized = normalize(query);
         String category = categoryId == null ? "" : categoryId.strip();
+        var categoryScope=category.isEmpty()?java.util.Set.<String>of():CatalogCategories.descendants(catalog.categories(),category);
         var context = catalog.items().stream()
-            .filter(item -> category.isEmpty() || item.categoryIds().contains(category))
+            .filter(item -> category.isEmpty() || item.categoryIds().stream().anyMatch(categoryScope::contains))
             .filter(item -> normalized.isEmpty() || normalize(item.name()).contains(normalized)
                 || normalize(item.description()).contains(normalized))
             .filter(item -> !availableOnly || item.available() && item.variants().stream().anyMatch(CatalogVariant::available)).toList();

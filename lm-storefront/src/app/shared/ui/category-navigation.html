@@ -1,0 +1,62 @@
+@if (header()) {
+  <div class="hidden min-w-0 items-center gap-5 xl:flex">
+    @for (root of roots().slice(0,3); track root.category.id) {
+      <button type="button" class="min-h-12 max-w-32 truncate px-0 py-3 text-sm font-semibold hover:underline underline-offset-8"
+        [title]="root.category.name" [attr.aria-expanded]="open() && highlighted() === root.category.id"
+        [attr.aria-controls]="open() ? id() + '-panel' : null" [class.underline]="activeRootId() === root.category.id || open() && highlighted() === root.category.id"
+        (pointerenter)="hover($event,root.category.id)" (click)="toggle($event,root.category.id)" (keydown.arrowdown)="arrow($event,root.category.id)">{{ root.category.name }}</button>
+    }
+  </div>
+}
+<button #trigger type="button" class="flex min-h-12 max-w-full items-center gap-2 px-0 py-3 text-sm font-semibold hover:underline underline-offset-8"
+  [id]="id() + '-trigger'" [attr.aria-expanded]="open() && highlighted() === null" [attr.aria-controls]="open() ? id() + '-panel' : null"
+  (pointerenter)="hover($event)" (click)="toggle($event)" (keydown.arrowdown)="arrow($event)">
+  <span>Categorías</span><app-ui-icon name="chevronDown" [size]="16" [class.rotate-180]="open()" />
+</button>
+<section #panel popover="auto" [id]="id() + '-panel'" aria-label="Explorar categorías del catálogo"
+  class="category-navigation-panel fixed flex-col overflow-y-auto overscroll-contain border-y border-line bg-surface p-0 text-ink"
+  (toggle)="syncOpen($event)">
+  <div class="mx-auto w-full max-w-[1600px] px-5 py-6 lg:px-12 lg:py-8">
+    <div class="mb-5 flex items-center justify-between gap-6 lg:mb-7">
+      <a routerLink="/" [queryParams]="{category:null,page:null}" queryParamsHandling="merge"
+        class="inline-flex min-h-11 items-center text-sm font-semibold underline underline-offset-4" (click)="close()">Ver todo el catálogo</a>
+      <button type="button" class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full p-0 hover:bg-image" aria-label="Cerrar categorías" (click)="close()"><app-ui-icon name="close" /></button>
+    </div>
+    <nav aria-label="Categorías y subcategorías" class="grid gap-x-8 gap-y-6 lg:grid-cols-4 xl:grid-cols-6">
+      @for (group of groups(); track group.category.id) {
+        <div class="min-w-0">
+          <div class="hidden lg:block">
+            <a routerLink="/" [queryParams]="{category:group.category.id,page:null}" queryParamsHandling="merge"
+              class="mb-1 flex min-h-11 items-center text-sm font-semibold hover:underline underline-offset-4"
+              [attr.aria-current]="activeId() === group.category.id ? 'page' : null" [class.underline]="highlighted() === group.category.id || activeRootId() === group.category.id" (click)="close()">{{ group.category.name }}</a>
+            @for (link of group.links; track link.category.id) {
+              <a routerLink="/" [queryParams]="{category:link.category.id,page:null}" queryParamsHandling="merge"
+                class="flex min-h-10 items-center py-2 text-sm text-muted hover:text-ink hover:underline underline-offset-4"
+                [style.padding-left.px]="link.depth * 12" [attr.aria-current]="activeId() === link.category.id ? 'page' : null"
+                [class.underline]="activeId() === link.category.id" (click)="close()">{{ link.category.name }}</a>
+            }
+          </div>
+          <div class="lg:hidden">
+            @if (group.links.length) {
+              <details [open]="activeRootId() === group.category.id" class="group">
+                <summary class="flex min-h-12 cursor-pointer list-none items-center justify-between gap-4 text-base font-semibold">{{ group.category.name }}<app-ui-icon name="chevronDown" [size]="18" class="group-open:rotate-180" /></summary>
+                <div class="pb-3 pl-3">
+                  <a routerLink="/" [queryParams]="{category:group.category.id,page:null}" queryParamsHandling="merge"
+                    class="flex min-h-11 items-center text-sm font-semibold underline underline-offset-4" [attr.aria-current]="activeId() === group.category.id ? 'page' : null" (click)="close()">Ver todo: {{ group.category.name }}</a>
+                  @for (link of group.links; track link.category.id) {
+                    <a routerLink="/" [queryParams]="{category:link.category.id,page:null}" queryParamsHandling="merge"
+                      class="flex min-h-11 items-center py-2 text-sm text-muted hover:text-ink hover:underline underline-offset-4"
+                      [style.padding-left.px]="link.depth * 12" [attr.aria-current]="activeId() === link.category.id ? 'page' : null" (click)="close()">{{ link.category.name }}</a>
+                  }
+                </div>
+              </details>
+            } @else {
+              <a routerLink="/" [queryParams]="{category:group.category.id,page:null}" queryParamsHandling="merge"
+                class="flex min-h-12 items-center text-base font-semibold hover:underline underline-offset-4" [attr.aria-current]="activeId() === group.category.id ? 'page' : null" (click)="close()">{{ group.category.name }}</a>
+            }
+          </div>
+        </div>
+      } @empty { <p class="py-6 text-sm text-muted">Este catálogo todavía no tiene categorías.</p> }
+    </nav>
+  </div>
+</section>

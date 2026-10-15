@@ -15,7 +15,7 @@ export class CatalogApi {
   favorites(catalogId: string, ids: string[]) {
     return this.http.post<{data?:FavoriteResponse;errors?:unknown[]}>(this.endpoint, {
       query: `query FavoriteItems($catalogId: ID!, $ids: [ID!]!) {
-        catalog { id name description currency currencyDecimals whatsappNumber branding { logoUrl primaryColor } categories { id slug name description } }
+        catalog { id name description currency currencyDecimals whatsappNumber branding { logoUrl primaryColor } categories { id slug name description parentId } }
         itemsByIds(catalogId:$catalogId, ids:$ids) { id item {
           id slug type name description categoryIds available attributes { name value } images { url alt }
           variants { id slug name priceMinor available attributes { name value } }
@@ -39,7 +39,7 @@ export class CatalogApi {
 
   metadata(fresh = false) {
     return this.http.post<{ data?: { catalog: CatalogMetadata }; errors?: unknown[] }>(this.endpoint, {
-      query: 'query CatalogMetadata { catalog { id name description currency currencyDecimals whatsappNumber branding { logoUrl primaryColor } categories { id slug name description } } }',
+      query: 'query CatalogMetadata { catalog { id name description currency currencyDecimals whatsappNumber branding { logoUrl primaryColor } categories { id slug name description parentId } } }',
     }, {transferCache: !fresh}).pipe(map(response => {
       if (response.errors?.length || !response.data?.catalog) throw new Error('No se pudo consultar la configuración del catálogo.');
       return response.data.catalog;
@@ -49,7 +49,7 @@ export class CatalogApi {
   orderSnapshot() {
     return this.http.post<{ data?: OrderSnapshot; errors?: unknown[] }>(this.endpoint, {
       query: `query ReviewOrder { catalog {
-        id name description currency currencyDecimals whatsappNumber branding { logoUrl primaryColor } categories { id slug name description }
+        id name description currency currencyDecimals whatsappNumber branding { logoUrl primaryColor } categories { id slug name description parentId }
         items { id slug type name description categoryIds available attributes { name value } images { url alt }
           variants { id slug name priceMinor available attributes { name value } }
           ${COMBO_FIELDS}
@@ -64,7 +64,7 @@ export class CatalogApi {
   detail(slug: string) {
     return this.http.post<{ data?: { catalog: CatalogMetadata; itemBySlug: CatalogItem | null }; errors?: unknown[] }>(this.endpoint, {
       query: `query ItemDetail($slug: String!) {
-        catalog { id name description currency currencyDecimals whatsappNumber branding { logoUrl primaryColor } categories { id slug name description } }
+        catalog { id name description currency currencyDecimals whatsappNumber branding { logoUrl primaryColor } categories { id slug name description parentId } }
         itemBySlug(slug: $slug) {
           id slug type name description categoryIds available attributes { name value } images { url alt }
           variants { id slug name priceMinor available attributes { name value } }
@@ -84,7 +84,7 @@ export class CatalogApi {
       query: `query BrowseCatalog($search: String, $categoryId: ID, $page: Int!, $pageSize: Int!, $sort: CatalogSort!, $availableOnly: Boolean!, $attributes:[CatalogAttributeFilterInput!]) {
         catalog {
           id name description currency currencyDecimals whatsappNumber branding { logoUrl primaryColor }
-          categories { id slug name description }
+          categories { id slug name description parentId }
         }
         itemPage(search: $search, categoryId: $categoryId, page: $page, pageSize: $pageSize, sort: $sort, availableOnly: $availableOnly, attributes:$attributes) {
           totalCount page pageSize totalPages

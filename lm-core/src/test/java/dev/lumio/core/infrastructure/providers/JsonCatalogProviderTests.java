@@ -13,6 +13,19 @@ import org.springframework.core.io.DefaultResourceLoader;
 import static org.junit.jupiter.api.Assertions.*;
 
 class JsonCatalogProviderTests {
+    @Test void mapsOptionalCategoryParentsAndValidatesTheirReferences() throws IOException {
+        var mapper=tools.jackson.databind.json.JsonMapper.builder().build();
+        var root=mapper.readTree(example());
+        var parent=(tools.jackson.databind.node.ObjectNode)root.path("categories").get(0);
+        var child=(tools.jackson.databind.node.ObjectNode)root.path("categories").get(1);
+        child.put("parentId",parent.path("id").stringValue());
+        var file=directory.resolve("hierarchy.json");Files.writeString(file,mapper.writeValueAsString(root));
+        assertEquals("ropa",load(file).catalog().categories().get(1).parentId());
+        child.put("parentId","missing");Files.writeString(file,mapper.writeValueAsString(root));
+        assertThrows(IllegalArgumentException.class,()->load(file));
+        child.put("parentId",parent.path("id").stringValue());parent.put("parentId",child.path("id").stringValue());
+        Files.writeString(file,mapper.writeValueAsString(root));assertThrows(IllegalArgumentException.class,()->load(file));
+    }
     @Test void readsGenericComboGroupsAndRejectsInvalidPricesOrReferences() throws IOException {
         var resource="classpath:catalog/combos.json";
         var combo=new JsonCatalogProvider(new DefaultResourceLoader(),resource).catalog().items().getLast();

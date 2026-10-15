@@ -65,7 +65,8 @@ public final class JsonCatalogProvider implements CatalogProvider {
     private Category category(JsonNode node, String path) {
         object(node, path);
         return new Category(text(node, "id", path), text(node, "slug", path),
-            text(node, "name", path), text(node, "description", path));
+            text(node, "name", path), text(node, "description", path),
+            node.has("parentId") && !node.path("parentId").isNull() ? text(node,"parentId",path) : null);
     }
 
     private CatalogItem item(JsonNode node, String path) {

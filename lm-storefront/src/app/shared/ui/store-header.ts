@@ -20,7 +20,7 @@ import { CategoryNavigation } from './category-navigation';
         <nav class="order-4 col-span-2 flex min-w-0 items-center gap-5 text-sm font-semibold lg:order-2 lg:col-span-1 lg:gap-6 lg:text-base" aria-label="Navegación del catálogo">
           <a routerLink="/" [queryParams]="{category: null, page: null}" queryParamsHandling="merge" class="shrink-0 py-4 hover:underline underline-offset-8" [class.font-semibold]="activeCategory() === ''" [class.underline]="activeCategory() === ''" [attr.aria-current]="activeCategory() === '' ? 'page' : null">Todo el catálogo</a>
           @if (brand.catalog()?.categories?.length) {
-            <app-category-navigation id="header-categories" [categories]="brand.catalog()!.categories" [activeId]="activeCategory()" />
+            <app-category-navigation id="header-categories" [header]="true" [categories]="brand.catalog()!.categories" [activeId]="activeCategory()" />
           }
         </nav>
         <app-header-search class="order-3 col-span-2 lg:col-span-1" />

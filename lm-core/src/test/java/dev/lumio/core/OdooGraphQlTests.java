@@ -50,7 +50,7 @@ class OdooGraphQlTests {
         properties.add("ODOO_WEBSITE_ID",() -> "1"); properties.add("ODOO_PRICELIST_ID",() -> "2"); properties.add("ODOO_WAREHOUSE_ID",() -> "3");
     }
     @LocalServerPort int port;
-    @BeforeEach void reset() { stub.status=200; stub.published=true; stub.campaignRows="[]"; stub.comboProducts=false; stub.onlyCombos=false; stub.requests.clear(); }
+    @BeforeEach void reset() { stub.status=200; stub.published=true; stub.campaignRows="[]"; stub.comboProducts=false; stub.onlyCombos=false; stub.categoryHierarchy=false; stub.requests.clear(); }
     @AfterAll static void stop() { stub.close(); }
     private WebTestClient client() { return WebTestClient.bindToServer().baseUrl("http://localhost:"+port).responseTimeout(Duration.ofSeconds(15)).build(); }
     @Test void sharesSnapshotAcrossRootFieldsAndExposesOnlyLumioData() {
@@ -71,6 +71,14 @@ class OdooGraphQlTests {
             .exchange().expectStatus().isOk().expectBody().jsonPath("$.errors[0].extensions.code").isEqualTo("CATALOG_UNAVAILABLE")
             .jsonPath("$.errors[0].extensions.reason").isEqualTo("AUTHENTICATION").returnResult();
         assertThat(new String(response.getResponseBody(),java.nio.charset.StandardCharsets.UTF_8)).doesNotContain("test-only-api-key","server secret","Demo");
+    }
+    @Test void exposesActualCategoryParentsAndKeepsInvisibleParentsOutOfTheContract() {
+        stub.categoryHierarchy=true;
+        client().post().uri("/graphql").bodyValue(Map.of("query","{catalog{categories{id parentId}}}"))
+            .exchange().expectStatus().isOk().expectBody().jsonPath("$.errors").doesNotExist()
+            .jsonPath("$.data.catalog.categories[0].parentId").isEmpty()
+            .jsonPath("$.data.catalog.categories[1].parentId").isEqualTo("category-5")
+            .jsonPath("$.data.catalog.categories[2].parentId").isEmpty();
     }
     @Test void publishedCombosDoNotBreakCatalogPagingOrFavoriteLookup() {
         stub.comboProducts=true;

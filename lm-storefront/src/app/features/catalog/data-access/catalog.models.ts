@@ -24,6 +24,7 @@ export interface CatalogVariant {
 }
 
 export interface Category {
+  parentId?: string | null;
   id: string; slug: string; name: string; description: string;
 }
 

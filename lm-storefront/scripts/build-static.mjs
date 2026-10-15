@@ -17,7 +17,7 @@ try {
   const response = await fetch(api, {
     method:'POST', headers:{'Content-Type':'application/json'}, signal:AbortSignal.timeout(15000),
     body:JSON.stringify({query:`query StaticBuild {
-      catalog { branding { logoUrl primaryColor } name description currency currencyDecimals whatsappNumber categories { id slug name description }
+      catalog { branding { logoUrl primaryColor } name description currency currencyDecimals whatsappNumber categories { id slug name description parentId }
         items { id slug type name description categoryIds available images { url alt }
           variants { id slug name priceMinor available attributes { name value } }
           ${COMBO_FIELDS}

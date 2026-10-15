@@ -44,6 +44,7 @@ public final class CatalogValidator {
             identity(category.id(), category.slug(), category.name(), categoryIds, categorySlugs, path);
             require(category.description() != null, path + ".description", "is required");
         }
+        CatalogCategories.validate(catalog.categories());
         var itemIds = new HashSet<String>();
         var itemSlugs = new HashSet<String>();
         var variantIds = new HashSet<String>();
