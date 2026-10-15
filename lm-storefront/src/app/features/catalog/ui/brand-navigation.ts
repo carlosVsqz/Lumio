@@ -7,8 +7,9 @@ import type {CatalogAttributeFacet} from '../data-access/catalog.models';
 import {brandLinks} from '../data-access/catalog-brands';
 import {parseCatalogQuery} from '../data-access/catalog-query';
 import {UiIcon} from '../../../shared/ui/ui-icon';
+import {BrandImage} from './brand-image';
 
-@Component({selector:'app-brand-navigation',standalone:true,imports:[RouterLink,UiIcon],host:{class:'block shrink-0',
+@Component({selector:'app-brand-navigation',standalone:true,imports:[RouterLink,UiIcon,BrandImage],host:{class:'block shrink-0',
   '(pointerenter)':'cancelClose()','(pointerleave)':'leave($event)','(focusout)':'focusOut($event)','(keydown.escape)':'escape($event)'},templateUrl:'./brand-navigation.html'})
 export class BrandNavigation {
   readonly facet=input<CatalogAttributeFacet|null>(null);

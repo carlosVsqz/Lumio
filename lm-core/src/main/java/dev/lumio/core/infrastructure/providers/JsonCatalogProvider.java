@@ -37,7 +37,12 @@ public final class JsonCatalogProvider implements CatalogProvider {
                 text(root, "currency", "catalog"), integer(root, "currencyDecimals", "catalog"),
                 text(root, "whatsappNumber", "catalog"),
                 list(root, "categories", "categories", this::category),
-                list(root, "items", "items", this::item), brandingOverride == null ? branding(root) : brandingOverride);
+                list(root, "items", "items", this::item), brandingOverride == null ? branding(root) : brandingOverride,
+                root.has("attributeImages") ? list(root,"attributeImages","attributeImages",(visual,path) -> {
+                    object(visual,path);var image=visual.get("image");object(image,path + ".image");
+                    return new CatalogAttributeImage(text(visual,"name",path),text(visual,"value",path),
+                        new CatalogImage(text(image,"url",path + ".image"),text(image,"alt",path + ".image")));
+                }) : List.of());
             CatalogValidator.validate(catalog);
             campaigns = CampaignValidator.validate(root.has("campaigns") ? list(root, "campaigns", "campaigns", this::campaign) : List.of());
         } catch (IOException | RuntimeException ex) {

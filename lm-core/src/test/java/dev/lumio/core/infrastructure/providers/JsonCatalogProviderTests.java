@@ -13,6 +13,20 @@ import org.springframework.core.io.DefaultResourceLoader;
 import static org.junit.jupiter.api.Assertions.*;
 
 class JsonCatalogProviderTests {
+    @Test void readsAndValidatesOptionalAttributeImagesWithoutChangingVariantIdentity() throws IOException {
+        var mapper=tools.jackson.databind.json.JsonMapper.builder().build();
+        var root=(tools.jackson.databind.node.ObjectNode)mapper.readTree(example());
+        var visuals=root.putArray("attributeImages");var visual=visuals.addObject().put("name","Marca").put("value","Real");
+        var image=visual.putObject("image").put("url","/images/brand.png").put("alt","Real");
+        var file=directory.resolve("brand-images.json");Files.writeString(file,mapper.writeValueAsString(root));
+        var catalog=load(file).catalog();assertEquals("/images/brand.png",catalog.attributeImages().getFirst().image().url());
+        assertThrows(UnsupportedOperationException.class,()->catalog.attributeImages().clear());
+        for(var url:java.util.List.of("javascript:alert(1)","https://user:secret@example.test/logo.png","//example.test/logo.png")) {
+            image.put("url",url);Files.writeString(file,mapper.writeValueAsString(root));assertThrows(IllegalArgumentException.class,()->load(file));
+        }
+        image.put("url","/images/brand.png");visuals.add(visual.deepCopy());
+        Files.writeString(file,mapper.writeValueAsString(root));assertThrows(IllegalArgumentException.class,()->load(file));
+    }
     @Test void variantImagesCanOverrideInheritOrExplicitlyRemoveSharedImages() throws IOException {
         var mapper=tools.jackson.databind.json.JsonMapper.builder().build();
         var root=mapper.readTree(example());

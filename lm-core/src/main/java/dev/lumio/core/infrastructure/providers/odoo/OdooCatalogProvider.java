@@ -89,7 +89,7 @@ public final class OdooCatalogProvider implements CatalogProvider {
                     client.requireFields("product.template.attribute.line",context,"id","product_tmpl_id","product_template_value_ids"),context) : List.<JsonNode>of();
             var valueIds = java.util.stream.Stream.concat(variants.stream().flatMap(v -> ids(v.get("product_template_attribute_value_ids")).stream()),
                 lines.stream().flatMap(line -> ids(line.get("product_template_value_ids")).stream())).distinct().toList();
-            var values = valueIds.isEmpty() ? List.<JsonNode>of() : client.search("product.template.attribute.value", List.of(List.of("id","in",valueIds)),fields("product.template.attribute.value",context,List.of("ptav_active"),"id","name","attribute_id"),context);
+            var values = valueIds.isEmpty() ? List.<JsonNode>of() : client.search("product.template.attribute.value", List.of(List.of("id","in",valueIds)),fields("product.template.attribute.value",context,List.of("ptav_active","image"),"id","name","attribute_id"),context);
             var attributeIds = values.stream().map(v -> relation(v.get("attribute_id"))).distinct().toList();
             var attributeFields = attributeIds.isEmpty() ? List.<String>of() : fields("product.attribute",context,List.of("visibility"),"id","name");
             var attributes = attributeIds.isEmpty() ? List.<JsonNode>of() : client.search("product.attribute",List.of(List.of("id","in",attributeIds)),attributeFields,context);
@@ -153,8 +153,15 @@ public final class OdooCatalogProvider implements CatalogProvider {
             var logoFields = fields("website", context, List.of("logo"), "id");
             var logo = client.readOne("website", settings.websiteId(), logoFields, context);
             var catalogBranding = new CatalogBranding(logoFields.contains("logo") && hasImage(logo,"logo") ? "/catalog-media/logo/" + settings.websiteId() : branding.logoUrl(), branding.primaryColor());
+            var publishedValues=new HashSet<VariantAttribute>();items.forEach(item -> publishedValues.addAll(item.attributes()));
+            var attributeImages=new LinkedHashMap<VariantAttribute,CatalogAttributeImage>();
+            for(var value:values) {
+                var attribute=valueMap.get(id(value));
+                if(filterableValues.contains(id(value)) && publishedValues.contains(attribute) && hasImage(value,"image"))
+                    attributeImages.putIfAbsent(attribute,new CatalogAttributeImage(attribute.name(),attribute.value(),image("attribute",id(value),attribute.value())));
+            }
             var catalog = new Catalog(settings.businessName().isBlank() ? text(website,"name") : settings.businessName(), settings.businessDescription(),
-                text(currency,"name"),decimals,settings.whatsappNumber(),categories,items,catalogBranding);
+                text(currency,"name"),decimals,settings.whatsappNumber(),categories,items,catalogBranding,new ArrayList<>(attributeImages.values()));
             CatalogValidator.validate(catalog); return catalog;
         } catch (CatalogUnavailableException ex) { throw ex; }
         catch (IllegalArgumentException | NullPointerException | ArithmeticException ex) { throw failure("MAPPING", "Los datos Odoo no cumplen el contrato del catálogo; revisa identificadores, atributos y valores monetarios."); }
@@ -191,11 +198,17 @@ public final class OdooCatalogProvider implements CatalogProvider {
             var context = context(); website(context); context.put("bin_size",false);
             return decodeImage(text(read("website",id,context,"id","logo"),"logo"),true);
         }
-        String model=switch(kind) { case "template" -> "product.template"; case "variant" -> "product.product"; case "extra" -> "product.image"; default -> throw new ImageNotFoundException(); };
+        String model=switch(kind) { case "template" -> "product.template"; case "variant" -> "product.product"; case "extra" -> "product.image"; case "attribute" -> "product.template.attribute.value"; default -> throw new ImageNotFoundException(); };
         if(id <= 0) throw new ImageNotFoundException();
         var context=context(); website(context);
         int templateId=id;
-        if(!kind.equals("template")) {
+        if(kind.equals("attribute")) {
+            var record=client.readOne(model,id,fields(model,context,List.of("ptav_active"),"id","product_tmpl_id","attribute_id"),context);
+            if(record.has("ptav_active") && !record.path("ptav_active").asBoolean())throw new ImageNotFoundException();
+            var attribute=client.readOne("product.attribute",relation(record.get("attribute_id")),fields("product.attribute",context,List.of("visibility"),"id"),context);
+            if(attribute.has("visibility") && !text(attribute,"visibility").equals("visible"))throw new ImageNotFoundException();
+            templateId=relation(record.get("product_tmpl_id"));
+        } else if(!kind.equals("template")) {
             var record=read(model,id,context,"id","product_tmpl_id",kind.equals("variant")?"active":"product_variant_id");
             if(kind.equals("variant") && !record.path("active").asBoolean()) throw new ImageNotFoundException();
             templateId=relation(record.get("product_tmpl_id"));
@@ -210,7 +223,8 @@ public final class OdooCatalogProvider implements CatalogProvider {
         if(!template.path("active").asBoolean() || !template.path("sale_ok").asBoolean() || !template.path("is_published").asBoolean()
             || site != 0 && site != settings.websiteId() || company != 0 && company != (int)context.get("company_id")) throw new ImageNotFoundException();
         context.put("bin_size",false);
-        String encoded=text(read(model,id,context,"id","image_1024"),"image_1024");
+        String imageField=kind.equals("attribute")?"image":"image_1024";
+        String encoded=text(read(model,id,context,"id",imageField),imageField);
         return decodeImage(encoded,false);
     }
     private Image decodeImage(String encoded, boolean allowSvg) {

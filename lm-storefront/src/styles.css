@@ -89,6 +89,19 @@
   .category-navigation-panel, .brand-navigation-panel { display: none; inset: auto; margin: 0; box-shadow: 0 12px 32px var(--color-overlay-shadow); }
   .category-navigation-panel:popover-open { display: flex; }
   .brand-navigation-panel:popover-open { display: block; }
+  .brand-menu-link.is-selected .brand-menu-visual { outline: 1px solid var(--color-accent); outline-offset: -1px; }
+  .brand-menu-link:focus-visible .brand-menu-image { transition: none; transform: none; }
+  @media (hover: hover) and (pointer: fine) {
+    .brand-menu-link:hover { text-decoration-line: underline; }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .brand-menu-image { transition: transform 160ms var(--ease-out); }
+    .brand-menu-link:not(:focus-visible):active .brand-menu-image { transform: scale(.98); }
+    @media (hover: hover) and (pointer: fine) {
+      .brand-menu-link:not(:focus-visible):hover .brand-menu-image { transform: scale(1.04); }
+      .brand-menu-link:not(:focus-visible):active .brand-menu-image { transform: scale(.98); }
+    }
+  }
   .store-header-surface { position: relative; }
   .store-header-surface::after { content: ''; position: absolute; inset: auto 0 0; height: 1px; pointer-events: none; box-shadow: 0 5px 16px var(--color-header-shadow); opacity: 0; }
   .store-header-surface.is-scrolled::after { opacity: 1; }

@@ -25,6 +25,15 @@ public final class CatalogValidator {
             } catch (IllegalArgumentException ex) { throw invalid("branding.logoUrl", "must be a public image URL without credentials"); }
         }
         require(catalog.description() != null, "description", "is required");
+        var visualKeys=new HashSet<dev.lumio.core.domain.VariantAttribute>();
+        for(var visual:catalog.attributeImages()) {
+            text(visual.name(),"attributeImages.name");text(visual.value(),"attributeImages.value");
+            require(visual.name().length()<=CatalogAttributeFilters.MAX_NAME_LENGTH && visual.value().length()<=CatalogAttributeFilters.MAX_VALUE_LENGTH,
+                "attributeImages","exceeds filterable attribute length limits");
+            require(visualKeys.add(new dev.lumio.core.domain.VariantAttribute(visual.name(),visual.value())),"attributeImages","contains a duplicate name/value pair");
+            require(visual.image()!=null,"attributeImages.image","is required");
+            images(java.util.List.of(visual.image()),"attributeImages.image");
+        }
         require(catalog.currency() != null && catalog.currency().matches("[A-Z]{3}"), "currency", "must be an ISO 4217 code");
         try {
             Currency.getInstance(catalog.currency());

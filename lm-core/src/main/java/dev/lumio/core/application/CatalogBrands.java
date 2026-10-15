@@ -18,7 +18,10 @@ public final class CatalogBrands {
         var counts=new TreeMap<String,Integer>();
         for(var item:catalog.items())item.attributes().stream().filter(value -> value.name().equals(attribute))
             .map(value -> value.value()).distinct().forEach(value -> counts.merge(value,1,Integer::sum));
+        var images=new java.util.HashMap<String,dev.lumio.core.domain.CatalogImage>();
+        catalog.attributeImages().stream().filter(value -> value.name().equals(attribute))
+            .forEach(value -> images.putIfAbsent(value.value(),value.image()));
         return new CatalogAttributeFacet(attribute,counts.entrySet().stream()
-            .map(entry -> new CatalogAttributeFacet.Value(entry.getKey(),entry.getValue())).toList());
+            .map(entry -> new CatalogAttributeFacet.Value(entry.getKey(),entry.getValue(),images.get(entry.getKey()))).toList());
     }
 }

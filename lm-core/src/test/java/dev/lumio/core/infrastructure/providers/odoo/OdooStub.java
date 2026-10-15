@@ -30,6 +30,8 @@ public final class OdooStub implements AutoCloseable {
     public volatile String logo="";
     public volatile boolean logoSchemaAvailable=true;
     public volatile boolean classification=false, classificationHidden=false;
+    public volatile boolean attributeImages=false, attributeImageSchemaAvailable=true, attributeValueActive=true;
+    public volatile int attributeTemplate=10;
     public volatile boolean comboProducts=false, onlyCombos=false;
     public volatile String comboExtra="5.00", sourceRate="2.0";
     public volatile int componentStock=3, comboCurrency=4, componentCompany=7;
@@ -67,9 +69,10 @@ public final class OdooStub implements AutoCloseable {
             for(String field:List.of("id","name","company_id","currency_id","active","decimal_places","rounding","website_id","website_description",
                 "description_sale","image_128","image_1024","image_variant_128","product_template_image_ids","type","sale_ok","is_published",
                 "public_categ_ids","display_name","product_tmpl_id","product_template_attribute_value_ids","is_storable","free_qty","uom_id",
-                "allow_out_of_stock_order","attribute_id","product_variant_id","logo","visibility","attribute_line_ids","product_template_value_ids","ptav_active","combo_ids","combo_item_ids","combo_id","product_id","extra_price","rate","parent_id")) fields.put(field,Map.of("type","test"));
+                "allow_out_of_stock_order","attribute_id","product_variant_id","logo","visibility","attribute_line_ids","product_template_value_ids","ptav_active","combo_ids","combo_item_ids","combo_id","product_id","extra_price","rate","parent_id","image")) fields.put(field,Map.of("type","test"));
             if(missingFreeQty) fields.remove("free_qty");
             if(!logoSchemaAvailable) fields.remove("logo");
+            if(!attributeImageSchemaAvailable && request.model().equals("product.template.attribute.value"))fields.remove("image");
             return mapper.writeValueAsString(fields);
         }
         if(request.method().equals("get_contextual_price")) return switch(request.body().path("ids").get(0).intValue()){case 11->price; case 101->"100.00";default->"22.50";};
@@ -86,13 +89,29 @@ public final class OdooStub implements AutoCloseable {
             case "product.public.category" -> categoryHierarchy ? "[{\"id\":5,\"name\":\"Ropa\",\"website_id\":1,\"parent_id\":false},{\"id\":6,\"name\":\"Camisetas\",\"website_id\":1,\"parent_id\":5},{\"id\":7,\"name\":\"Global\",\"website_id\":1,\"parent_id\":999}]" : "[{\"id\":5,\"name\":\"Ropa\",\"website_id\":1,\"website_description\":\"<p>Prendas</p>\"}]";
             case "product.template" -> read ? "["+template(request.body().path("ids").get(0).intValue())+"]" : searchTemplates(request);
             case "product.product" -> read ? "["+variant(request.body().path("ids").get(0).intValue())+"]" : searchVariants(request);
-            case "product.template.attribute.value" -> "[{\"id\":31,\"name\":\"S\",\"attribute_id\":30},{\"id\":32,\"name\":\""+(duplicateCombination?"S":"M")+"\",\"attribute_id\":30}"+(classification?",{\"id\":33,\"name\":\"Algodón\",\"attribute_id\":34,\"ptav_active\":true}":"")+"]";
-            case "product.attribute" -> "[{\"id\":30,\"name\":\"Talla\",\"visibility\":\"visible\"}"+(classification?",{\"id\":34,\"name\":\"Material\",\"visibility\":\""+(classificationHidden?"hidden":"visible")+"\"}":"")+"]";
+            case "product.template.attribute.value" -> templateAttributeValues(request);
+            case "product.attribute" -> attributeRows(request);
             case "product.template.attribute.line" -> classification ? "[{\"id\":71,\"product_tmpl_id\":10,\"product_template_value_ids\":[33]}]" : "[]";
             case "product.image" -> "["+(extraImage ? "{\"id\":41,\"name\":\"Foto de talla S\",\"product_tmpl_id\":false,\"product_variant_id\":11,\"image_128\":\"8 bytes\",\"image_1024\":\""+image+"\"}" : "")
                 +(sharedImage ? (extraImage?",":"")+"{\"id\":42,\"name\":\"Foto compartida\",\"product_tmpl_id\":10,\"product_variant_id\":false,\"image_128\":\"8 bytes\",\"image_1024\":\""+image+"\"}" : "")+"]";
             default -> throw new IllegalArgumentException(request.model());
         };
+    }
+    private String attributeRows(Request request) {
+        var rows=new ArrayList<Map<String,Object>>();
+        rows.add(Map.of("id",30,"name","Talla","visibility","visible"));
+        if(classification)rows.add(Map.of("id",34,"name","Material","visibility",classificationHidden?"hidden":"visible"));
+        if(request.method().equals("read"))rows.removeIf(row -> !row.get("id").equals(request.body().path("ids").get(0).intValue()));
+        return mapper.writeValueAsString(rows);
+    }
+    private String templateAttributeValues(Request request) {
+        var rows=new ArrayList<Map<String,Object>>();
+        rows.add(Map.of("id",31,"name","S","attribute_id",30));
+        rows.add(Map.of("id",32,"name",duplicateCombination?"S":"M","attribute_id",30));
+        if(classification)rows.add(Map.of("id",33,"name","Algodón","attribute_id",34,"product_tmpl_id",attributeTemplate,
+            "ptav_active",attributeValueActive,"image",attributeImages && attributeImageSchemaAvailable?image:""));
+        if(request.method().equals("read"))rows.removeIf(row -> !row.get("id").equals(request.body().path("ids").get(0).intValue()));
+        return mapper.writeValueAsString(rows);
     }
     private String searchTemplates(Request request) {
         var rows=new ArrayList<JsonNode>();

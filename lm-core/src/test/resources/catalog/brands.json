@@ -1,6 +1,10 @@
 {
   "name":"Brand fixture", "description":"Test catalog", "currency":"GTQ", "currencyDecimals":2, "whatsappNumber":"",
   "categories":[{"id":"clothing","slug":"clothing","name":"Clothing","description":""}],
+  "attributeImages":[
+    {"name":"Brand","value":"A & B","image":{"url":"/images/brand-a.png","alt":"A & B"}},
+    {"name":"Brand","value":"Unpublished brand","image":{"url":"/images/brand-unused.png","alt":"Unused"}}
+  ],
   "items":[
     {"id":"a-one","slug":"a-one","name":"First","description":"Cotton","categoryIds":["clothing"],"images":[],"available":true,
       "attributes":[{"name":"Brand","value":"A & B"}],"variants":[{"id":"a-one-v","slug":"one","name":"One","attributes":[],"priceMinor":100,"available":true}]},

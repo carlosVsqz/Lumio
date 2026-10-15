@@ -19,7 +19,7 @@ type CampaignSlide {
 enum CatalogSort { CATALOG_ORDER NAME_ASC PRICE_ASC PRICE_DESC }
 input CatalogAttributeFilterInput { name: String! values: [String!]! }
 type CatalogAttributeFacet { name: String! values: [CatalogAttributeFacetValue!]! }
-type CatalogAttributeFacetValue { value: String! count: Int! }
+type CatalogAttributeFacetValue { value: String! count: Int! image: CatalogImage }
 type CatalogBranding { logoUrl: String! primaryColor: String! }
 
 type CatalogItemPage {

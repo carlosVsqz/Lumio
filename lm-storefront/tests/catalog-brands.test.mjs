@@ -16,3 +16,14 @@ test('brand lookup is local, accent insensitive and never includes duplicate, em
   assert.equal(brandLinks(facet,'alamo').length,1);assert.equal(brandLinks(facet,'missing').length,0);
   assert.equal(brandLinks(facet).length,1);assert.deepEqual(brandLinks(null),[]);assert.deepEqual(brandLinks({name:'',values:facet.values}),[]);
 });
+test('brand images preserve real public URLs and reject unsafe sources without dropping the brand',()=>{
+  for(const url of ['/catalog-media/attribute/33','https://example.test/logo.png']) {
+    const links=brandLinks({name:'Marca',values:[{value:'Real',count:1,image:{url,alt:'Real'}}]});
+    assert.deepEqual(links[0].image,{url,alt:'Real'});
+  }
+  for(const url of ['javascript:alert(1)','//example.test/logo.png','https://user:secret@example.test/logo.png','/\\example.test/logo.png',' /image.png','image.png','/image\n.png']) {
+    const links=brandLinks({name:'Marca',values:[{value:'Real',count:1,image:{url,alt:'Real'}}]});
+    assert.equal(links.length,1);assert.equal(links[0].image,null);
+  }
+  assert.equal(brandLinks({name:'Marca',values:[{value:'Real',count:1}]})[0].image,null);
+});

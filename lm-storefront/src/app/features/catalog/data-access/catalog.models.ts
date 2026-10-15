@@ -43,7 +43,7 @@ export interface CatalogItemPage {
   items: CatalogItem[];
   totalCount: number; page: number; pageSize: number; totalPages: number;
 }
-export interface CatalogAttributeFacet { name:string; values:{value:string;count:number}[] }
+export interface CatalogAttributeFacet { name:string; values:{value:string;count:number;image?:CatalogImage|null}[] }
 
 export interface CatalogBrowseData {
   catalog: CatalogMetadata;

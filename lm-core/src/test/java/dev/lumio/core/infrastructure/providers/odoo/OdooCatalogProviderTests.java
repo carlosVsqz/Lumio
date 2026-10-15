@@ -8,6 +8,33 @@ import org.junit.jupiter.params.provider.CsvSource;
 import static org.assertj.core.api.Assertions.*;
 
 class OdooCatalogProviderTests {
+    @Test void adaptsNativeAttributeImagesWithoutPublishingHiddenOrUnusedValues() {
+        stub.classification=true;stub.attributeImages=true;
+        var catalog=provider().catalog();
+        assertThat(catalog.attributeImages()).hasSize(1);
+        assertThat(new dev.lumio.core.application.CatalogBrands("Material").facet(catalog).values().getFirst().image().url()).isEqualTo("/catalog-media/attribute/33");
+        stub.classificationHidden=true;
+        assertThat(provider().catalog().attributeImages()).isEmpty();
+        stub.classificationHidden=false;stub.attributeValueActive=false;
+        assertThat(provider().catalog().attributeImages()).isEmpty();
+        stub.attributeValueActive=true;stub.attributeImageSchemaAvailable=false;
+        assertThat(provider().catalog().attributeImages()).isEmpty();
+    }
+    @Test void attributeImageProxyChecksPublicationVisibilityActivityAndImageFormat() {
+        stub.classification=true;stub.attributeImages=true;
+        assertThat(provider().image("attribute",33).contentType()).isEqualTo("image/png");
+        assertThat(stub.requests.stream().filter(request -> request.model().equals("product.template.attribute.value") && request.method().equals("read")))
+            .anySatisfy(request -> assertThat(request.body().path("context").path("bin_size").asBoolean()).isFalse());
+        stub.published=false;
+        assertThatThrownBy(()->provider().image("attribute",33)).isInstanceOf(OdooCatalogProvider.ImageNotFoundException.class);
+        stub.published=true;stub.classificationHidden=true;
+        assertThatThrownBy(()->provider().image("attribute",33)).isInstanceOf(OdooCatalogProvider.ImageNotFoundException.class);
+        stub.classificationHidden=false;stub.attributeValueActive=false;
+        assertThatThrownBy(()->provider().image("attribute",33)).isInstanceOf(OdooCatalogProvider.ImageNotFoundException.class);
+        stub.attributeValueActive=true;stub.image="!invalid";
+        assertFailure(()->provider().image("attribute",33),"PROTOCOL");
+        stub.status=401;assertFailure(()->provider().image("attribute",33),"AUTHENTICATION");
+    }
     @Test void keepsVariantImagesSeparateAndInheritsTemplateImagesOnlyWhenThereIsNoOverride() {
         stub.ownVariantImage=true;stub.extraImage=true;stub.sharedImage=true;
         var item=provider().catalog().items().getFirst();
