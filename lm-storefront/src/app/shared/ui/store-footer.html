@@ -9,10 +9,9 @@
         <h2 id="footer-explore-title" class="mb-3 text-sm font-semibold">Explorar</h2>
         <ul class="text-sm">
           <li><a routerLink="/" class="inline-flex min-h-11 items-center py-2 hover:underline underline-offset-4">Todo el catálogo</a></li>
-          @for (category of (brand.catalog()?.categories ?? []).slice(0, 5); track category.id) {
-            <li><a routerLink="/" [queryParams]="{category: category.id}" class="block min-h-11 break-words py-3 hover:underline underline-offset-4">{{ category.name }}</a></li>
+          @if (brand.catalog()?.categories?.length) {
+            <li><app-category-navigation id="footer-categories" [categories]="brand.catalog()!.categories" /></li>
           }
-          @if ((brand.catalog()?.categories?.length ?? 0) > 5) { <li><a routerLink="/" class="inline-flex min-h-11 items-center py-2 underline underline-offset-4">Ver todas las categorías</a></li> }
         </ul>
       </nav>
       <div class="min-w-0">
