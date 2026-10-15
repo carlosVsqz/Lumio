@@ -1,0 +1,26 @@
+#brand-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  background: var(--color-background, #ffffff);
+  opacity: 1;
+  pointer-events: none;
+  transition: opacity 180ms var(--ease-out, cubic-bezier(.23, 1, .32, 1));
+}
+#brand-splash[hidden] { display: none; }
+/* Match the saved theme before Angular's full stylesheet has finished loading. */
+:root[data-theme='dark'] #brand-splash { background: #141a17; }
+#brand-splash.is-leaving { opacity: 0; }
+#brand-splash img {
+  box-sizing: content-box;
+  width: min(52vw, 15rem);
+  height: 7.5rem;
+  padding: 1rem;
+  object-fit: contain;
+  background: #ffffff;
+}
+@media (prefers-reduced-motion: reduce) {
+  #brand-splash { transition-duration: 80ms; }
+}

@@ -1,10 +1,12 @@
 import { COMBO_FIELDS } from '../src/app/features/catalog/data-access/catalog.models.ts';
 import { spawn } from 'node:child_process';
-import { readFile, writeFile, rm } from 'node:fs/promises';
+import { readFile, writeFile, rm, access } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
 import { publicSiteUrl, buildApiUrl, sitemap } from '../src/app/core/seo-model.ts';
 import { verifyArticleHtml } from './verify-html.mjs';
+import { catalogManifest, verifyPwaBuild } from './pwa-build.mjs';
+import { writeBrandAssets } from './brand-assets.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const output = resolve(root, 'dist/lm-storefront/browser');
@@ -41,6 +43,8 @@ try {
     child.on('error', reject); child.on('exit', complete);
   });
   if (exitCode !== 0) throw new Error('Angular no completó el prerenderizado.');
+  try {await writeBrandAssets(output,catalog,api);}
+  catch(error) {throw new Error('No se pudieron preparar el splash y los iconos de la marca: '+error.message);}
   for (const item of catalog.items) {
     const html = await readFile(resolve(output, 'catalogo', item.slug, 'index.html'), 'utf8');
     verifyArticleHtml(html, item, catalog, origin);
@@ -48,6 +52,18 @@ try {
   await writeFile(resolve(output, 'sitemap.xml'), sitemap(origin, slugs));
   await writeFile(resolve(output, 'robots.txt'), 'User-agent: *\nAllow: /\nSitemap: ' + origin + '/sitemap.xml\n');
   await writeFile(resolve(output, 'static-build.json'), JSON.stringify({publicUrl:origin,slugs}, null, 2));
+  const baseManifest=JSON.parse(await readFile(resolve(root,'public/manifest.webmanifest'),'utf8'));
+  await writeFile(resolve(output,'manifest.webmanifest'),JSON.stringify(catalogManifest(baseManifest,catalog),null,2));
+  const workerExists=await access(resolve(output,'ngsw-worker.js')).then(()=>true,()=>false);
+  if(workerExists) {
+    const pwaCode=await new Promise((complete,reject)=>{
+      const child=spawn(process.execPath,[resolve(root,'node_modules/@angular/service-worker/ngsw-config.js'),'dist/lm-storefront/browser','ngsw-config.json','/'],{cwd:root,stdio:'inherit'});
+      child.on('error',reject);child.on('exit',complete);
+    });
+    if(pwaCode!==0)throw new Error('No se pudo generar la caché PWA.');
+    await verifyPwaBuild(output,catalog);
+    console.log('Manifest del negocio, iconos y caché PWA verificados.');
+  }
   console.log('HTML verificado; sitemap y robots.txt generados. Artefacto estático listo en ' + output);
 } catch (error) {
   await rm(resolve(root, 'dist/lm-storefront'), {recursive:true, force:true});

@@ -26,6 +26,7 @@
         <a routerLink="/pedido" class="text-link mt-2">Revisar mi pedido <app-ui-icon name="right" /></a>
       </div>
     </div>
+    <div class="border-t border-line py-4">@defer (on idle) { <app-pwa-controls /> } @placeholder { <div class="min-h-25" aria-hidden="true"></div> }@if (theme.storageWarning()) { <p role="status" class="mt-2 text-sm text-muted">{{ theme.storageWarning() }}</p> }</div>
     <div class="flex flex-wrap items-center justify-between gap-x-8 gap-y-3 border-t border-line py-6 text-xs leading-6 text-muted">
       <p>Catálogo y consultas · Lumio</p>
       @if (brand.catalog(); as catalog) { <p>Precios en {{ catalog.currency }}. El negocio confirma precio y disponibilidad.</p> }

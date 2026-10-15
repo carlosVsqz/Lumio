@@ -1,0 +1,17 @@
+{
+  "$schema": "./node_modules/@angular/service-worker/config/schema.json",
+  "index": "/index.csr.html",
+  "assetGroups": [{
+    "name": "lumio-app",
+    "installMode": "prefetch",
+    "updateMode": "prefetch",
+    "resources": {"files": [
+      "/index.csr.html", "/*.js", "/*.css", "/manifest.webmanifest", "/favicon.svg",
+      "/icons/*.png", "/fonts/*.woff2", "/images/*.svg",
+      "!/ngsw-worker.js", "!/safety-worker.js", "!/worker-basic.min.js"
+    ]}
+  }],
+  "dataGroups": [],
+  "navigationUrls": ["/**", "!/**/*.*", "!/graphql", "!/graphql/**", "!/catalog-media/**", "!/healthz"],
+  "navigationRequestStrategy": "freshness"
+}

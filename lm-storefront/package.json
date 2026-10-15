@@ -20,6 +20,7 @@
     "@angular/platform-browser": "^22.2.0",
     "@angular/platform-server": "^22.2.0",
     "@angular/router": "^22.2.0",
+    "@angular/service-worker": "22.2.2",
     "@angular/ssr": "^22.2.2",
     "@lucide/angular": "1.55.0",
     "rxjs": "~7.8.0",
@@ -33,6 +34,7 @@
     "@types/node": "^22.12.0",
     "postcss": "^8.5.29",
     "prettier": "^3.8.1",
+    "sharp": "0.35.5",
     "tailwindcss": "^4.3.3",
     "typescript": "~6.0.2"
   }

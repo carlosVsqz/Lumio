@@ -7,9 +7,10 @@ import { BrandingStore } from './core/branding-store';
 import { WishlistFeedback } from './features/wishlist/wishlist-feedback';
 import { StoreFooter } from './shared/ui/store-footer';
 import { CampaignCarousel } from './features/campaigns/campaign-carousel';
+import { PwaStatus } from './features/pwa/pwa-status';
 
 @Component({
-  selector: 'app-root', standalone: true, imports: [RouterOutlet, StoreHeader, StoreFooter, WishlistFeedback, CampaignCarousel],
+  selector: 'app-root', standalone: true, imports: [RouterOutlet, StoreHeader, StoreFooter, WishlistFeedback, CampaignCarousel, PwaStatus],
   templateUrl: './app.html',
   host: { '[style.--color-primary]': 'brand.color()', '[style.--color-accent]': 'brand.textColor()', '[style.--brand-contrast]': 'brand.contrast()', class: 'flex min-h-dvh flex-col' },
 })
@@ -21,6 +22,7 @@ export class App {
 
   constructor() {
     afterNextRender(() => {
+      document.dispatchEvent(new Event('lumio:ready'));
       let path = this.router.url.split(/[?#]/)[0];
       this.router.events.pipe(filter(event => event instanceof NavigationEnd), takeUntilDestroyed(this.destroy)).subscribe(event => {
         const next = event.urlAfterRedirects.split(/[?#]/)[0];

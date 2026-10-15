@@ -55,6 +55,11 @@
   }
   html { scroll-padding-block-start: 12rem; }
   @media (min-width: 64rem) { html { scroll-padding-block-start: 6rem; } }
+  app-root { padding-inline: env(safe-area-inset-left) env(safe-area-inset-right); }
+  @media (display-mode: standalone) {
+    app-store-header { padding-top: env(safe-area-inset-top); background: var(--color-surface); }
+    app-store-footer { padding-bottom: env(safe-area-inset-bottom); }
+  }
   body { @apply bg-background font-sans leading-normal text-ink antialiased; }
   button { @apply min-h-11 min-w-11 cursor-pointer rounded-none border border-transparent px-5 py-3 font-semibold disabled:cursor-not-allowed disabled:opacity-50; }
   :where(button, a, summary) { @apply touch-manipulation; }

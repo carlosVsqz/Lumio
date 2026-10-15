@@ -14,3 +14,20 @@ test('business colors keep readable text, identifiable buttons and contrasting b
   assert.equal(brandSurfaceColor('#ffee00','dark'),'#ffee00');
 });
 
+import {readFile} from 'node:fs/promises';
+import {runInNewContext} from 'node:vm';
+import {storedTheme,THEME_STORAGE_KEY} from '../src/app/core/theme-model.ts';
+
+test('theme defaults to light and restores only an explicit valid selection, including before first paint',async()=>{
+  const source=await readFile(new URL('../public/theme-init.js',import.meta.url),'utf8');
+  for(const [raw,expected] of [[null,'light'],['light','light'],['dark','dark'],['DARK','light'],['{}','light'],['system','light'],['','light']]){
+    assert.equal(storedTheme(raw),expected);
+    const root={dataset:{}};let color='';
+    runInNewContext(source,{document:{documentElement:root,querySelector:()=>({setAttribute:(_name,value)=>color=value})},localStorage:{getItem:key=>{assert.equal(key,THEME_STORAGE_KEY);return raw;}},matchMedia:()=>{throw new Error('System preference must not be used');}});
+    assert.equal(root.dataset.theme,expected);assert.equal(color,expected==='dark'?'#141a17':'#ffffff');
+  }
+  const root={dataset:{}};
+  const context={document:{documentElement:root,querySelector:()=>null}};
+  Object.defineProperty(context,'localStorage',{get(){throw new Error('blocked');}});
+  assert.doesNotThrow(()=>runInNewContext(source,context));assert.equal(root.dataset.theme,'light');
+});
