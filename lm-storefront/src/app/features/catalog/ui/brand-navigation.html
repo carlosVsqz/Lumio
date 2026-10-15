@@ -1,0 +1,32 @@
+<button #trigger type="button" id="header-brands-trigger" class="flex min-h-12 items-center gap-2 px-0 py-3 text-sm font-semibold hover:underline underline-offset-8"
+  [attr.aria-expanded]="open()" [attr.aria-controls]="open() ? 'header-brands-panel' : null" [class.underline]="selected().size > 0"
+  (pointerenter)="hover($event)" (click)="toggle()" (keydown.arrowdown)="$event.preventDefault();show(true)">
+  Marcas <app-ui-icon name="chevronDown" [size]="16" [class.rotate-180]="open()" />
+</button>
+<section #panel id="header-brands-panel" popover="auto" aria-labelledby="header-brands-title" class="brand-navigation-panel fixed overflow-y-auto overscroll-contain border-y border-line bg-surface p-0 text-ink" (toggle)="sync($event)">
+  <div class="sticky top-0 z-10 bg-surface">
+    <div class="mx-auto flex max-w-[1600px] flex-wrap items-center gap-x-8 gap-y-3 px-5 py-5 lg:px-12">
+      <h2 id="header-brands-title" class="text-lg font-semibold">Marcas</h2>
+      <div class="order-3 flex w-full items-center gap-3 rounded-full bg-image px-4 sm:order-none sm:max-w-sm">
+        <app-ui-icon name="search" [size]="18" class="text-muted" />
+        <label for="header-brand-search" class="sr-only">Buscar marca</label>
+        <input id="header-brand-search" type="search" class="h-11 min-w-0 flex-1 bg-transparent text-base placeholder:text-muted" placeholder="Buscar marca" autocomplete="off" [spellcheck]="false" [value]="search()" (input)="search.set($any($event.target).value)">
+      </div>
+      <button type="button" class="ml-auto flex h-11 w-11 shrink-0 items-center justify-center rounded-full p-0 hover:bg-image" aria-label="Cerrar marcas" (click)="close()"><app-ui-icon name="close" /></button>
+    </div>
+  </div>
+  <div class="mx-auto max-w-[1600px] px-5 pb-6 lg:px-12 lg:pb-8">
+    <p class="sr-only" role="status">{{links().length}} marcas encontradas.</p>
+    <nav aria-label="Marcas del catálogo" class="columns-2 gap-6 sm:columns-3 lg:columns-4 xl:columns-6">
+      @for (brand of links(); track brand.value) {
+        <a routerLink="/" [queryParams]="brand.parameters" class="mb-1 flex min-h-12 w-full min-w-0 break-inside-avoid items-start justify-between gap-3 py-3 text-sm hover:underline underline-offset-4" (click)="close(false)">
+          <span class="min-w-0 break-words" [class.font-semibold]="selected().has(brand.value)">{{brand.value}} @if (selected().has(brand.value)) { <span class="sr-only">Marca seleccionada</span> }</span><span class="flex shrink-0 items-center gap-2 text-xs text-muted tabular-nums">@if (selected().has(brand.value)) { <app-ui-icon name="check" [size]="16" /> }({{brand.count}})</span>
+        </a>
+      }
+    </nav>
+    @if (!links().length) {
+      <p class="py-6 text-sm text-muted">{{ !ready() ? 'Las marcas aparecerán cuando se cargue el catálogo.' : search() ? 'No hay marcas que coincidan con tu búsqueda.' : 'Este catálogo todavía no tiene marcas configuradas.' }}</p>
+    }
+    <a routerLink="/" class="mt-5 inline-flex min-h-11 items-center text-sm font-semibold underline underline-offset-4" (click)="close(false)">Ver todo el catálogo</a>
+  </div>
+</section>

@@ -44,7 +44,7 @@ export class CategoryNavigation {
     });
   }
   toggle(event:Event,rootId:string|null=null) {
-    if(this.open() && this.invoker===event.currentTarget && !this.hoverOpened)this.close();
+    if(this.panel()?.nativeElement.matches(':popover-open') && this.invoker===event.currentTarget && !this.hoverOpened)this.close();
     else this.show(event.currentTarget as HTMLElement,rootId,true);
   }
   hover(event:PointerEvent,rootId:string|null=null) {
@@ -53,7 +53,7 @@ export class CategoryNavigation {
   }
   show(invoker:HTMLElement,rootId:string|null,focus:boolean) {
     this.cancelClose();this.invoker=invoker;this.hoverOpened=!focus;this.highlighted.set(rootId);
-    if(!this.open())this.panel()?.nativeElement.showPopover({source:invoker});
+    if(!this.panel()?.nativeElement.matches(':popover-open'))this.panel()?.nativeElement.showPopover({source:invoker});
     this.open.set(true);this.position();
     afterNextRender(()=>{
       if(!this.open())return;
@@ -63,11 +63,11 @@ export class CategoryNavigation {
   }
   arrow(event:Event,rootId:string|null=null) { event.preventDefault();this.show(event.currentTarget as HTMLElement,rootId,true); }
   close(restoreFocus=true) {
-    this.cancelClose();if(!this.open())return;
-    this.open.set(false);this.panel()?.nativeElement.hidePopover();this.highlighted.set(null);
+    this.cancelClose();this.open.set(false);
+    const panel=this.panel()?.nativeElement;if(panel?.matches(':popover-open'))panel.hidePopover();this.highlighted.set(null);
     if(restoreFocus)(this.invoker??this.trigger()?.nativeElement)?.focus({preventScroll:true});
   }
-  syncOpen(event:Event) { this.open.set((event as ToggleEvent).newState==='open'); }
+  syncOpen(event:Event) { this.open.set(this.panel()?.nativeElement.matches(':popover-open')??(event as ToggleEvent).newState==='open'); }
   cancelClose() { if(this.closeTimer!==undefined)clearTimeout(this.closeTimer);this.closeTimer=undefined; }
   leave(event:PointerEvent) {
     if(event.pointerType!=='mouse' || !this.open())return;

@@ -9,9 +9,10 @@ import { WishlistLink } from '../../features/wishlist/wishlist-link';
 import { HeaderSearch } from './header-search';
 import { StoreBrand } from './store-brand';
 import { CategoryNavigation } from './category-navigation';
+import {BrandNavigation} from '../../features/catalog/ui/brand-navigation';
 
 @Component({
-  selector: 'app-store-header', standalone: true, imports: [RouterLink, OrderLink, WishlistLink, HeaderSearch, StoreBrand, CategoryNavigation],
+  selector: 'app-store-header', standalone: true, imports: [RouterLink, OrderLink, WishlistLink, HeaderSearch, StoreBrand, CategoryNavigation,BrandNavigation],
   host: { class: 'sticky top-0 z-40 block shrink-0' },
   template: `
     <header class="store-header-surface border-b border-line bg-surface" [class.is-scrolled]="scrolled()">
@@ -22,6 +23,7 @@ import { CategoryNavigation } from './category-navigation';
           @if (brand.catalog()?.categories?.length) {
             <app-category-navigation id="header-categories" [header]="true" [categories]="brand.catalog()!.categories" [activeId]="activeCategory()" />
           }
+          <app-brand-navigation [facet]="brand.catalog()?.brandFacet ?? null" [ready]="!!brand.catalog()" />
         </nav>
         <app-header-search class="order-3 col-span-2 lg:col-span-1" />
         <div class="order-2 flex shrink-0 items-center gap-1 lg:order-4"><app-wishlist-link /><app-order-link /></div>

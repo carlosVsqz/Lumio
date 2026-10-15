@@ -13,6 +13,23 @@ import org.springframework.core.io.DefaultResourceLoader;
 import static org.junit.jupiter.api.Assertions.*;
 
 class JsonCatalogProviderTests {
+    @Test void variantImagesCanOverrideInheritOrExplicitlyRemoveSharedImages() throws IOException {
+        var mapper=tools.jackson.databind.json.JsonMapper.builder().build();
+        var root=mapper.readTree(example());
+        var variant=(tools.jackson.databind.node.ObjectNode)root.path("items").get(0).path("variants").get(0);
+        var file=directory.resolve("variant-images.json");Files.writeString(file,mapper.writeValueAsString(root));
+        assertEquals(load(file).catalog().items().getFirst().images(),load(file).catalog().items().getFirst().variants().getFirst().images());
+        variant.putArray("images").addObject().put("url","/images/variant.jpg").put("alt","Variante concreta");
+        Files.writeString(file,mapper.writeValueAsString(root));
+        assertEquals("/images/variant.jpg",load(file).catalog().items().getFirst().variants().getFirst().images().getFirst().url());
+        for(var url:java.util.List.of("javascript:alert(1)","https://user:secret@example.test/image.jpg","//example.test/image.jpg")) {
+            ((tools.jackson.databind.node.ObjectNode)variant.path("images").get(0)).put("url",url);
+            Files.writeString(file,mapper.writeValueAsString(root));assertThrows(IllegalArgumentException.class,()->load(file));
+        }
+        variant.putArray("images");Files.writeString(file,mapper.writeValueAsString(root));
+        assertTrue(load(file).catalog().items().getFirst().variants().getFirst().images().isEmpty());
+        variant.putNull("images");Files.writeString(file,mapper.writeValueAsString(root));assertThrows(IllegalArgumentException.class,()->load(file));
+    }
     @Test void mapsOptionalCategoryParentsAndValidatesTheirReferences() throws IOException {
         var mapper=tools.jackson.databind.json.JsonMapper.builder().build();
         var root=mapper.readTree(example());

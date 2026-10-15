@@ -17,8 +17,9 @@ public class CatalogController {
     private final CatalogProvider provider;
     private final CatalogNavigation navigation;
     private final CatalogIdentity identity;
+    private final CatalogBrands brands;
     private static final String SNAPSHOT = CatalogController.class.getName()+".snapshot";
-    public CatalogController(CatalogProvider provider, CatalogNavigation navigation, CatalogIdentity identity) { this.provider=provider; this.navigation=navigation; this.identity=identity; }
+    public CatalogController(CatalogProvider provider, CatalogNavigation navigation, CatalogIdentity identity, CatalogBrands brands) { this.provider=provider; this.navigation=navigation; this.identity=identity;this.brands=brands; }
     private Mono<Catalog> snapshot(DataFetchingEnvironment environment) {
         var context=environment.getGraphQlContext();
         synchronized(context) {
@@ -32,6 +33,7 @@ public class CatalogController {
         return Mono.fromCallable(() -> CampaignValidator.validate(provider.campaigns())).subscribeOn(Schedulers.boundedElastic());
     }
     @SchemaMapping(typeName = "Catalog", field = "id") public String catalogId(Catalog catalog) { return identity.id(); }
+    @SchemaMapping(typeName = "Catalog", field = "brandFacet") public CatalogAttributeFacet brandFacet(Catalog catalog) { return brands.facet(catalog); }
     @QueryMapping public Mono<List<CatalogItemLookup>> itemsByIds(@Argument List<String> ids, @Argument String catalogId, DataFetchingEnvironment environment) {
         CatalogLookup.validate(ids);
         if (!identity.id().equals(catalogId)) throw new IllegalArgumentException("catalogId does not match the active catalog");

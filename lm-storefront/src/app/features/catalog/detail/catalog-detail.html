@@ -5,7 +5,7 @@
   <div role="alert" class="py-20 text-center"><h1 class="text-3xl font-semibold tracking-tight">No se pudo cargar el artículo</h1><p class="mt-4 text-muted">Comprueba tu conexión e inténtalo de nuevo.</p><button type="button" class="brand-button mt-6" (click)="retry.next()">Reintentar</button></div>
 } @else if (item(); as article) {
   <div class="grid items-start gap-9 pb-10 lg:grid-cols-[minmax(0,1.45fr)_minmax(320px,1fr)] lg:gap-12 xl:gap-20">
-    <app-product-gallery [images]="article.images" [name]="article.name" />
+    <app-product-gallery [images]="images()" [name]="article.name" />
     <section class="min-w-0 lg:sticky lg:top-28 lg:max-w-[440px]" aria-labelledby="article-name">
       <p class="mb-3 text-xs font-semibold tracking-wider text-muted">{{ categories() }}</p>
       <div class="flex items-start justify-between gap-4"><h1 id="article-name" class="page-title min-w-0">{{ article.name }}</h1>@if (catalog(); as currentCatalog) { <app-favorite-button [itemId]="article.id" [catalogId]="currentCatalog.id" descriptionId="article-name" /> }</div>

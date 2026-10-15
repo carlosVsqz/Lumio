@@ -23,6 +23,7 @@ public final class OdooStub implements AutoCloseable {
     public volatile boolean missingFreeQty=false;
     public volatile boolean malformed=false;
     public volatile boolean extraImage=false;
+    public volatile boolean ownVariantImage=false, sharedImage=false;
     public volatile boolean duplicateCombination=false;
     public volatile int company=7;
     public volatile int currencyDecimals=2;
@@ -88,7 +89,8 @@ public final class OdooStub implements AutoCloseable {
             case "product.template.attribute.value" -> "[{\"id\":31,\"name\":\"S\",\"attribute_id\":30},{\"id\":32,\"name\":\""+(duplicateCombination?"S":"M")+"\",\"attribute_id\":30}"+(classification?",{\"id\":33,\"name\":\"Algodón\",\"attribute_id\":34,\"ptav_active\":true}":"")+"]";
             case "product.attribute" -> "[{\"id\":30,\"name\":\"Talla\",\"visibility\":\"visible\"}"+(classification?",{\"id\":34,\"name\":\"Material\",\"visibility\":\""+(classificationHidden?"hidden":"visible")+"\"}":"")+"]";
             case "product.template.attribute.line" -> classification ? "[{\"id\":71,\"product_tmpl_id\":10,\"product_template_value_ids\":[33]}]" : "[]";
-            case "product.image" -> extraImage ? "[{\"id\":41,\"name\":\"Foto de talla S\",\"product_tmpl_id\":false,\"product_variant_id\":11,\"image_128\":\"8 bytes\",\"image_1024\":\""+image+"\"}]" : "[]";
+            case "product.image" -> "["+(extraImage ? "{\"id\":41,\"name\":\"Foto de talla S\",\"product_tmpl_id\":false,\"product_variant_id\":11,\"image_128\":\"8 bytes\",\"image_1024\":\""+image+"\"}" : "")
+                +(sharedImage ? (extraImage?",":"")+"{\"id\":42,\"name\":\"Foto compartida\",\"product_tmpl_id\":10,\"product_variant_id\":false,\"image_128\":\"8 bytes\",\"image_1024\":\""+image+"\"}" : "")+"]";
             default -> throw new IllegalArgumentException(request.model());
         };
     }
@@ -124,7 +126,7 @@ public final class OdooStub implements AutoCloseable {
         return "{\"id\":"+id+",\"name\":\""+(id==100?"Combo de prueba":id==10?"Camiseta":"Asesoría")+"\",\"type\":\""+(id==100?"combo":id==10?"consu":"service")+"\",\"active\":true,\"sale_ok\":true,\"is_published\":"+published+",\"website_id\":1,\"company_id\":7,\"combo_ids\":"+(id==100?"[70,80]":"[]")+",\"public_categ_ids\":[5],\"website_description\":\"<p>Descripción real</p><script>secret()</script>\",\"image_128\":\"8 bytes\",\"product_template_image_ids\":[],\"attribute_line_ids\":"+(classification&&id==10?"[71]":"[]")+",\"image_1024\":\""+image+"\"}";
     }
     private String variant(int id) {
-        return "{\"id\":"+id+",\"display_name\":\"Variante "+id+"\",\"active\":true,\"product_tmpl_id\":"+(id==101?100:id==21?20:10)+",\"product_template_attribute_value_ids\":"+(id==21||id==101?"[]":id==11?"[31]":"[32]")+",\"sale_ok\":true,\"company_id\":"+componentCompany+",\"type\":\""+(id==101?"combo":id==21?"service":"consu")+"\",\"is_storable\":"+(id!=21 && id!=101)+",\"free_qty\":"+(id==12?componentStock:0)+",\"qty_available\":999,\"virtual_available\":999,\"uom_id\":6,\"allow_out_of_stock_order\":"+backorder+",\"image_variant_128\":false,\"image_1024\":\""+image+"\"}";
+        return "{\"id\":"+id+",\"display_name\":\"Variante "+id+"\",\"active\":true,\"product_tmpl_id\":"+(id==101?100:id==21?20:10)+",\"product_template_attribute_value_ids\":"+(id==21||id==101?"[]":id==11?"[31]":"[32]")+",\"sale_ok\":true,\"company_id\":"+componentCompany+",\"type\":\""+(id==101?"combo":id==21?"service":"consu")+"\",\"is_storable\":"+(id!=21 && id!=101)+",\"free_qty\":"+(id==12?componentStock:0)+",\"qty_available\":999,\"virtual_available\":999,\"uom_id\":6,\"allow_out_of_stock_order\":"+backorder+",\"image_variant_128\":"+(ownVariantImage && id==12?"\"8 bytes\"":"false")+",\"image_1024\":\""+image+"\"}";
     }
     @Override public void close() { server.stop(0); }
     /** Optional local fixture for manually building Angular against the real Java adapter. */

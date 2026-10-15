@@ -1,9 +1,9 @@
 <app-catalog-search inputId="catalog-search" label="Buscar en el catálogo" [showLabel]="true" class="mb-8" />
-@if (facets().length) {
-  <h2 class="mb-5 text-sm font-semibold">Características</h2>
-  @for (facet of facets(); track facet.name) {
+@for (group of facetGroups(); track group.title) {
+  <h2 class="mb-5 text-sm font-semibold">{{group.title}}</h2>
+  @for (facet of group.facets; track facet.name) {
     <fieldset class="mb-6">
-      <legend class="mb-2 text-sm font-semibold">{{facet.name}}</legend>
+      <legend class="mb-2 text-sm font-semibold" [class.sr-only]="group.brands">{{group.brands ? 'Marcas' : facet.name}}</legend>
       @for (option of facet.values; track option.value) {
         <label class="flex min-h-11 items-center gap-3 text-sm" [class.cursor-pointer]="!disabled(facet.name,option.value,option.count)" [class.text-muted]="disabled(facet.name,option.value,option.count)">
           <input type="checkbox" class="h-5 w-5 shrink-0 accent-[var(--color-accent)]" [checked]="selected(facet.name,option.value)"

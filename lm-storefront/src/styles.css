@@ -86,8 +86,9 @@
   @media (prefers-reduced-motion: reduce) {
     .campaign-panel:not(.instant) { transition: opacity 80ms var(--ease-out); }
   }
-  .category-navigation-panel { display: none; inset: auto; margin: 0; box-shadow: 0 12px 32px var(--color-overlay-shadow); }
+  .category-navigation-panel, .brand-navigation-panel { display: none; inset: auto; margin: 0; box-shadow: 0 12px 32px var(--color-overlay-shadow); }
   .category-navigation-panel:popover-open { display: flex; }
+  .brand-navigation-panel:popover-open { display: block; }
   .store-header-surface { position: relative; }
   .store-header-surface::after { content: ''; position: absolute; inset: auto 0 0; height: 1px; pointer-events: none; box-shadow: 0 5px 16px var(--color-header-shadow); opacity: 0; }
   .store-header-surface.is-scrolled::after { opacity: 1; }

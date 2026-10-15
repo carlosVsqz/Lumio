@@ -14,6 +14,17 @@ import java.util.Map;
 
 @SpringBootTest(webEnvironment=SpringBootTest.WebEnvironment.RANDOM_PORT,properties="lumio.catalog.provider=odoo")
 class OdooGraphQlTests {
+    @Test void detailExposesOnlyTheImagesMappedToEachVariant() {
+        stub.ownVariantImage=true;stub.extraImage=true;
+        try {
+            client().post().uri("/graphql").bodyValue(Map.of("query","{itemBySlug(slug:\"camiseta-10\"){variants{id images{url alt}}}}"))
+                .exchange().expectStatus().isOk().expectBody().jsonPath("$.errors").doesNotExist()
+                .jsonPath("$.data.itemBySlug.variants[0].images[0].url").isEqualTo("/catalog-media/template/10")
+                .jsonPath("$.data.itemBySlug.variants[0].images[1].url").isEqualTo("/catalog-media/extra/41")
+                .jsonPath("$.data.itemBySlug.variants[1].images.length()").isEqualTo(1)
+                .jsonPath("$.data.itemBySlug.variants[1].images[0].url").isEqualTo("/catalog-media/variant/12");
+        } finally {stub.ownVariantImage=false;stub.extraImage=false;}
+    }
     @Test void campaignQueryUsesLumioContractAndErrorsDoNotLookLikeEmptyCampaigns() {
         stub.campaignRows="[{\"id\":9,\"title\":\"Nueva colección\",\"message\":\"Consulta las opciones publicadas\",\"action_label\":\"Explorar\",\"action_url\":\"/\",\"sequence\":10,\"active\":true,\"is_published\":true,\"website_id\":1,\"company_id\":7,\"starts_at\":false,\"ends_at\":false}]";
         String query="{ campaigns { id title message actionLabel actionUrl } }";

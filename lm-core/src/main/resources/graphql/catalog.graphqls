@@ -31,6 +31,7 @@ type CatalogItemPage {
   totalPages: Int!
 }
 type Catalog {
+  brandFacet: CatalogAttributeFacet!
   id: ID!
   branding: CatalogBranding!
   name: String!
@@ -68,6 +69,7 @@ type CatalogVariant {
   attributes: [VariantAttribute!]!
   priceMinor: Int!
   available: Boolean!
+  images: [CatalogImage!]!
 }
 enum CatalogItemType { PRODUCT SERVICE COMBO }
 

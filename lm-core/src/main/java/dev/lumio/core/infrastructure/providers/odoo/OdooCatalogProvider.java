@@ -120,7 +120,13 @@ public final class OdooCatalogProvider implements CatalogProvider {
                     boolean available = !variant.path("is_storable").asBoolean() || number(variant.get("free_qty")).compareTo(BigDecimal.ONE) >= 0
                         || settings.stockPolicy() == OdooSettings.StockPolicy.WEBSITE && variant.path("allow_out_of_stock_order").asBoolean();
                     var attrs = ids(variant.get("product_template_attribute_value_ids")).stream().map(valueMap::get).map(Objects::requireNonNull).toList();
-                    itemVariants.add(new CatalogVariant("variant-"+id(variant),slug(text(variant,"display_name"),id(variant)),text(variant,"display_name"),attrs,minor(price,rounding,decimals),available));
+                    var variantImages = new ArrayList<CatalogImage>();
+                    if (hasImage(variant,"image_variant_128")) variantImages.add(image("variant",id(variant),text(variant,"display_name")));
+                    else if (hasImage(template,"image_128")) variantImages.add(image("template",id(template),text(template,"name")));
+                    for (var extra:extras) if (hasImage(extra,"image_128") && (relation(extra.get("product_variant_id")) == id(variant)
+                        || relation(extra.get("product_variant_id")) == 0 && relation(extra.get("product_tmpl_id")) == id(template)))
+                        variantImages.add(image("extra",id(extra),text(extra,"name")));
+                    itemVariants.add(new CatalogVariant("variant-"+id(variant),slug(text(variant,"display_name"),id(variant)),text(variant,"display_name"),attrs,minor(price,rounding,decimals),available,variantImages));
                     if (hasImage(variant,"image_variant_128")) images.add(image("variant",id(variant),text(variant,"display_name")));
                 }
                 if (itemVariants.isEmpty()) continue; // Only materialized, active combinations can be ordered.

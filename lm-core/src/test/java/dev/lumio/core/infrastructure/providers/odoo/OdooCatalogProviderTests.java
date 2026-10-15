@@ -8,6 +8,15 @@ import org.junit.jupiter.params.provider.CsvSource;
 import static org.assertj.core.api.Assertions.*;
 
 class OdooCatalogProviderTests {
+    @Test void keepsVariantImagesSeparateAndInheritsTemplateImagesOnlyWhenThereIsNoOverride() {
+        stub.ownVariantImage=true;stub.extraImage=true;stub.sharedImage=true;
+        var item=provider().catalog().items().getFirst();
+        assertThat(item.variants().getFirst().images()).extracting(image -> image.url())
+            .containsExactly("/catalog-media/template/10","/catalog-media/extra/41","/catalog-media/extra/42");
+        assertThat(item.variants().get(1).images()).extracting(image -> image.url())
+            .containsExactly("/catalog-media/variant/12","/catalog-media/extra/42");
+        assertThat(item.images()).extracting(image -> image.url()).contains("/catalog-media/variant/12","/catalog-media/extra/41");
+    }
     OdooStub stub;
     @BeforeEach void start() throws Exception { stub=new OdooStub(); }
     @AfterEach void stop() { stub.close(); }
@@ -171,8 +180,11 @@ class OdooCatalogProviderTests {
         assertThat(item.attributes()).contains(new dev.lumio.core.domain.VariantAttribute("Material","Algodón"));
         assertThat(item.variants()).hasSize(2);
         assertThat(item.variants().getFirst().attributes()).noneMatch(attribute -> attribute.name().equals("Material"));
+        assertThat(new dev.lumio.core.application.CatalogBrands("Material").facet(provider().catalog()).values())
+            .containsExactly(new dev.lumio.core.application.CatalogAttributeFacet.Value("Algodón",1));
         stub.classificationHidden=true;
         assertThat(provider().catalog().items().getFirst().attributes()).noneMatch(attribute -> attribute.name().equals("Material"));
+        assertThat(new dev.lumio.core.application.CatalogBrands("Material").facet(provider().catalog()).values()).isEmpty();
     }
     @Test void recordLimitsFailInsteadOfSilentlyTruncating() {
         var s=stub.settings(OdooSettings.StockPolicy.FREE_STOCK,3000);

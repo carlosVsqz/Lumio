@@ -1,3 +1,4 @@
+export interface CatalogImage {url:string;alt:string}
 export interface CatalogItem {
   attributes: {name:string;value:string}[];
   type: 'PRODUCT' | 'SERVICE' | 'COMBO';
@@ -18,6 +19,7 @@ export interface ComboGroup { id:string; name:string; options:ComboOption[] }
 export const COMBO_FIELDS = 'comboGroups { id name options { id variantId name extraPriceMinor available maxQuantity attributes { name value } } }';
 
 export interface CatalogVariant {
+  images?: CatalogImage[];
   id: string; slug: string; name: string;
   attributes: { name: string; value: string }[];
   priceMinor: number; available: boolean;
@@ -29,6 +31,7 @@ export interface Category {
 }
 
 export interface CatalogMetadata {
+  brandFacet?: CatalogAttributeFacet | null;
   id: string;
   name: string; description: string; currency: string; currencyDecimals: number;
   branding: { logoUrl: string; primaryColor: string };

@@ -58,21 +58,7 @@ public final class CatalogValidator {
                 require(categoryIds.contains(id), path + ".categoryIds", "references an unknown category");
                 require(references.add(id), path + ".categoryIds", "contains a duplicate reference");
             }
-            for (int j = 0; j < item.images().size(); j++) {
-                var image = item.images().get(j);
-                var imagePath = path + ".images[" + j + "]";
-                text(image.alt(), imagePath + ".alt");
-                text(image.url(), imagePath + ".url");
-                try {
-                    var uri = URI.create(image.url());
-                    require((uri.isAbsolute() && ("https".equals(uri.getScheme()) || "http".equals(uri.getScheme()))
-                        && uri.getHost() != null && uri.getUserInfo() == null)
-                        || (image.url().startsWith("/") && !image.url().startsWith("//") && !uri.isAbsolute()),
-                        imagePath + ".url", "must be an HTTP(S) URL or a path starting with /");
-                } catch (IllegalArgumentException ex) {
-                    throw invalid(imagePath + ".url", "must be an HTTP(S) URL or a path starting with /");
-                }
-            }
+            images(item.images(),path + ".images");
             require(!item.variants().isEmpty(), path + ".variants", "must contain at least one variant");
             var variantSlugs = new HashSet<String>();
             var combinations = new HashSet<java.util.Map<String, String>>();
@@ -80,6 +66,7 @@ public final class CatalogValidator {
                 var variant = item.variants().get(j);
                 var variantPath = path + ".variants[" + j + "]";
                 identity(variant.id(), variant.slug(), variant.name(), variantIds, variantSlugs, variantPath);
+                images(variant.images(),variantPath + ".images");
                 require(variant.priceMinor() >= 0, variantPath + ".priceMinor", "must be a nonnegative integer");
                 var attributes = new TreeMap<String, String>();
                 for (var attribute : variant.attributes()) {
@@ -129,6 +116,18 @@ public final class CatalogValidator {
                     path + ".attributes", "exceeds filterable attribute length limits");
                 require(classification.add(attribute), path + ".attributes", "contains a duplicate name/value pair");
             }
+        }
+    }
+
+    private static void images(java.util.List<dev.lumio.core.domain.CatalogImage> images,String path) {
+        for (int i=0;i<images.size();i++) {
+            var image=images.get(i);var imagePath=path + "[" + i + "]";
+            text(image.alt(),imagePath + ".alt");text(image.url(),imagePath + ".url");
+            try {
+                var uri=URI.create(image.url());
+                require((uri.isAbsolute() && ("https".equals(uri.getScheme()) || "http".equals(uri.getScheme())) && uri.getHost()!=null && uri.getUserInfo()==null)
+                    || (image.url().startsWith("/") && !image.url().startsWith("//") && !uri.isAbsolute()),imagePath + ".url","must be an HTTP(S) URL or a path starting with /");
+            } catch (IllegalArgumentException ex) {throw invalid(imagePath + ".url","must be an HTTP(S) URL or a path starting with /");}
         }
     }
 

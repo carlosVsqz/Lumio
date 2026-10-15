@@ -71,13 +71,11 @@ public final class JsonCatalogProvider implements CatalogProvider {
 
     private CatalogItem item(JsonNode node, String path) {
         object(node, path);
+        var images = images(node, path);
         return new CatalogItem(text(node, "id", path), text(node, "slug", path),
             text(node, "name", path), text(node, "description", path),
             list(node, "categoryIds", path + ".categoryIds", (value, p) -> string(value, p)),
-            list(node, "images", path + ".images", (image, p) -> {
-                object(image, p);
-                return new CatalogImage(text(image, "url", p), text(image, "alt", p));
-            }), bool(node, "available", path), list(node, "variants", path + ".variants", this::variant), itemType(node, path), itemAttributes(node,path),
+            images, bool(node, "available", path), list(node, "variants", path + ".variants", (variant,p) -> variant(variant,p,images)), itemType(node, path), itemAttributes(node,path),
             node.has("comboGroups") ? list(node,"comboGroups",path + ".comboGroups",(group,p) -> {
                 object(group,p);
                 return new ComboGroup(text(group,"id",p),text(group,"name",p),list(group,"options",p + ".options",(option,op) -> {
@@ -108,12 +106,22 @@ public final class JsonCatalogProvider implements CatalogProvider {
     }
 
     private CatalogVariant variant(JsonNode node, String path) {
+        return variant(node,path,List.of());
+    }
+
+    private List<CatalogImage> images(JsonNode node, String path) {
+        return list(node,"images",path + ".images",(image,p) -> {
+            object(image,p);return new CatalogImage(text(image,"url",p),text(image,"alt",p));
+        });
+    }
+
+    private CatalogVariant variant(JsonNode node, String path, List<CatalogImage> inheritedImages) {
         object(node, path);
         return new CatalogVariant(text(node, "id", path), text(node, "slug", path), text(node, "name", path),
             list(node, "attributes", path + ".attributes", (attribute, p) -> {
                 object(attribute, p);
                 return new VariantAttribute(text(attribute, "name", p), text(attribute, "value", p));
-            }), integer(node, "priceMinor", path), bool(node, "available", path));
+            }), integer(node, "priceMinor", path), bool(node, "available", path),node.has("images") ? images(node,path) : inheritedImages);
     }
 
     private static <T> List<T> list(JsonNode node, String key, String path, BiFunction<JsonNode, String, T> read) {

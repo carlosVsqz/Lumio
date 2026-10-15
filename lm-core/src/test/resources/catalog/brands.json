@@ -1,0 +1,12 @@
+{
+  "name":"Brand fixture", "description":"Test catalog", "currency":"GTQ", "currencyDecimals":2, "whatsappNumber":"",
+  "categories":[{"id":"clothing","slug":"clothing","name":"Clothing","description":""}],
+  "items":[
+    {"id":"a-one","slug":"a-one","name":"First","description":"Cotton","categoryIds":["clothing"],"images":[],"available":true,
+      "attributes":[{"name":"Brand","value":"A & B"}],"variants":[{"id":"a-one-v","slug":"one","name":"One","attributes":[],"priceMinor":100,"available":true}]},
+    {"id":"a-two","slug":"a-two","name":"Second","description":"Cotton","categoryIds":[],"images":[],"available":false,
+      "attributes":[{"name":"Brand","value":"A & B"}],"variants":[{"id":"a-two-v","slug":"two","name":"Two","attributes":[],"priceMinor":200,"available":false}]},
+    {"id":"b-one","slug":"b-one","name":"Third","description":"Linen","categoryIds":["clothing"],"images":[],"available":true,
+      "attributes":[{"name":"Brand","value":"Álamo"}],"variants":[{"id":"b-one-v","slug":"three","name":"Three","attributes":[],"priceMinor":300,"available":true}]}
+  ]
+}

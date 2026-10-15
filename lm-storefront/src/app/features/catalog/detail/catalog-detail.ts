@@ -19,6 +19,7 @@ import { minimumItemPrice } from '../catalog-presentation';
 import { FavoriteButton } from '../../wishlist/favorite-button';
 import { ComboPicker } from './combo-picker';
 import { evaluateCombo, ComboChoices } from './combo-selection';
+import {variantImages} from './gallery-model';
 
 @Component({
   selector: 'app-catalog-detail', standalone: true, imports: [RouterLink, ProductGallery, VariantPicker, QuantityInput, UiIcon, FavoriteButton, ComboPicker],
@@ -43,6 +44,7 @@ export class CatalogDetail {
   readonly options = computed(() => this.item() ? attributeOptions(this.item()!) : []);
   readonly complete = computed(() => this.options().every(option => Object.hasOwn(this.choices(), option.name)));
   readonly variant = computed(() => this.item() ? resolveVariant(this.item()!, this.choices()) : null);
+  readonly images = computed(() => this.item() ? variantImages(this.item()!,this.variant()) : []);
   readonly quantity = computed(() => positiveQuantity(this.quantityText()));
   readonly combo = computed(() => this.item()?evaluateCombo(this.item()!,this.variant(),this.comboChoices(),this.quantity()):null);
   readonly startingPrice = computed(() => !this.variant() || this.item()?.type==='COMBO' && !this.combo()?.complete);

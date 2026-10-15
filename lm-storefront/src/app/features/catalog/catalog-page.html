@@ -14,7 +14,7 @@
 </section>
 <div class="grid items-start gap-8 lg:grid-cols-[210px_minmax(0,1fr)] lg:gap-10 xl:grid-cols-[230px_minmax(0,1fr)]">
   <aside id="catalog-filters-panel" class="border-b border-line pb-8 lg:sticky lg:top-26 lg:block lg:border-0" [class.hidden]="!filtersOpen()" aria-label="Filtros del catálogo">
-    <app-catalog-filters [query]="query()" [facets]="store.facets()" [loading]="store.loading() || store.loadingMore()" (apply)="filter($event)" />
+    <app-catalog-filters [query]="query()" [facets]="store.facets()" [brandAttribute]="store.catalog()?.brandFacet?.name ?? ''" [loading]="store.loading() || store.loadingMore()" (apply)="filter($event)" />
   </aside>
   <section class="min-w-0" aria-label="Resultados del catálogo" [attr.aria-busy]="store.loading() || store.loadingMore()">
     <p class="sr-only" role="status" aria-live="polite" aria-atomic="true">@if (store.loading()) { Cargando artículos… } @else { {{ store.page()?.totalCount ?? 0 }} resultados. }</p>
