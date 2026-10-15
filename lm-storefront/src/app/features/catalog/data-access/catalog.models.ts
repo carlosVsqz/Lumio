@@ -1,12 +1,21 @@
 export interface CatalogItem {
   attributes: {name:string;value:string}[];
-  type: 'PRODUCT' | 'SERVICE';
+  type: 'PRODUCT' | 'SERVICE' | 'COMBO';
+  comboGroups?: ComboGroup[];
   id: string; slug: string; name: string; description: string;
   categoryIds: string[];
   images: { url: string; alt: string }[];
   available: boolean;
   variants: CatalogVariant[];
 }
+
+export interface ComboOption {
+  id: string; variantId: string; name: string;
+  attributes: {name:string;value:string}[];
+  extraPriceMinor: number; available: boolean; maxQuantity: number | null;
+}
+export interface ComboGroup { id:string; name:string; options:ComboOption[] }
+export const COMBO_FIELDS = 'comboGroups { id name options { id variantId name extraPriceMinor available maxQuantity attributes { name value } } }';
 
 export interface CatalogVariant {
   id: string; slug: string; name: string;

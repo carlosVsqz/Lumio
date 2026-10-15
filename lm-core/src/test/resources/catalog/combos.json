@@ -1,0 +1,194 @@
+{
+  "name": "L",
+  "description": "Productos y servicios de ejemplo para tu negocio.",
+  "currency": "GTQ",
+  "currencyDecimals": 2,
+  "whatsappNumber": "",
+  "campaigns": [
+    {
+      "id": "demo-ropa",
+      "title": "Explora el catálogo de ejemplo",
+      "message": "Productos con opciones de talla y color.",
+      "actionLabel": "Ver ropa",
+      "actionUrl": "/?category=ropa"
+    },
+    {
+      "id": "demo-servicios",
+      "title": "También hay servicios",
+      "message": "Consulta la sesión de asesoría del catálogo de ejemplo.",
+      "actionLabel": "Ver servicio",
+      "actionUrl": "/catalogo/asesoria-personalizada"
+    }
+  ],
+  "categories": [
+    {
+      "id": "ropa",
+      "slug": "ropa",
+      "name": "Ropa",
+      "description": "Prendas de uso diario."
+    },
+    {
+      "id": "servicios",
+      "slug": "servicios",
+      "name": "Servicios",
+      "description": "Atención y asesoría."
+    }
+  ],
+  "items": [
+    {
+      "id": "camiseta",
+      "type": "PRODUCT",
+      "slug": "camiseta-algodon",
+      "name": "Camiseta de algodón",
+      "description": "Una prenda sencilla con opciones de talla y color.",
+      "categoryIds": [
+        "ropa"
+      ],
+      "images": [
+        {
+          "url": "/images/camiseta.svg",
+          "alt": "Ilustración de una camiseta"
+        }
+      ],
+      "available": true,
+      "variants": [
+        {
+          "id": "camiseta-m-azul",
+          "slug": "m-azul",
+          "name": "Mediana azul",
+          "attributes": [
+            {
+              "name": "talla",
+              "value": "M"
+            },
+            {
+              "name": "color",
+              "value": "Azul"
+            }
+          ],
+          "priceMinor": 12500,
+          "available": true
+        },
+        {
+          "id": "camiseta-l-natural",
+          "slug": "l-natural",
+          "name": "Grande natural",
+          "attributes": [
+            {
+              "name": "talla",
+              "value": "L"
+            },
+            {
+              "name": "color",
+              "value": "Natural"
+            }
+          ],
+          "priceMinor": 13500,
+          "available": false
+        }
+      ]
+    },
+    {
+      "id": "asesoria",
+      "type": "SERVICE",
+      "slug": "asesoria-personalizada",
+      "name": "Asesoría personalizada",
+      "description": "Una sesión de orientación adaptada a tus necesidades.",
+      "categoryIds": [
+        "servicios"
+      ],
+      "images": [],
+      "available": true,
+      "variants": [
+        {
+          "id": "asesoria-sesion",
+          "slug": "sesion",
+          "name": "Sesión individual",
+          "attributes": [],
+          "priceMinor": 7500,
+          "available": true
+        }
+      ]
+    },
+    {
+      "id": "combo-ejemplo",
+      "slug": "combo-ejemplo",
+      "type": "COMBO",
+      "name": "Combo configurable",
+      "description": "Elige una prenda y una sesión de asesoría.",
+      "categoryIds": [],
+      "images": [],
+      "available": true,
+      "variants": [
+        {
+          "id": "combo-base",
+          "slug": "base",
+          "name": "Combo",
+          "attributes": [],
+          "priceMinor": 10000,
+          "available": true
+        }
+      ],
+      "comboGroups": [
+        {
+          "id": "prenda",
+          "name": "Prenda",
+          "options": [
+            {
+              "id": "azul",
+              "variantId": "componente-azul",
+              "name": "Camiseta azul",
+              "attributes": [
+                {
+                  "name": "Talla",
+                  "value": "M"
+                }
+              ],
+              "extraPriceMinor": 500,
+              "available": true,
+              "maxQuantity": 3
+            },
+            {
+              "id": "natural",
+              "variantId": "componente-natural",
+              "name": "Camiseta natural",
+              "attributes": [
+                {
+                  "name": "Talla",
+                  "value": "L"
+                }
+              ],
+              "extraPriceMinor": 0,
+              "available": true,
+              "maxQuantity": 5
+            },
+            {
+              "id": "agotada",
+              "variantId": "componente-agotada",
+              "name": "Camiseta agotada",
+              "attributes": [],
+              "extraPriceMinor": 0,
+              "available": false,
+              "maxQuantity": 0
+            }
+          ]
+        },
+        {
+          "id": "servicio",
+          "name": "Asesoría",
+          "options": [
+            {
+              "id": "sesion",
+              "variantId": "servicio-sesion",
+              "name": "Sesión personalizada",
+              "attributes": [],
+              "extraPriceMinor": 0,
+              "available": true,
+              "maxQuantity": null
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

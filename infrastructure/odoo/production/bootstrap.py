@@ -95,7 +95,7 @@ def configure(env, fresh, login, password, business, origin):
     group = record(env, 'res.groups', 'catalog_group', {'name':'Lumio: lectura de catálogo (API)',
         'implied_ids':[Command.link(env.ref('base.group_user').id)], 'api_key_duration':90})
     models = ['website','stock.warehouse','product.pricelist','product.pricelist.item','res.currency',
-        'product.template','product.product','product.public.category','product.template.attribute.value',
+        'product.template','product.product','product.combo','product.combo.item','product.public.category','product.template.attribute.value',
         'product.template.attribute.line','product.attribute','product.attribute.value','product.image',
         'stock.quant','stock.move','stock.location','stock.picking','stock.picking.type']
     for model in models:
@@ -109,7 +109,7 @@ def configure(env, fresh, login, password, business, origin):
         raise ValueError('The integration user does not have access to the selected website company')
     if not user.active:
         raise ValueError('The dedicated integration user is disabled; no account was reactivated')
-    for model in ('product.template','product.product','stock.quant','lumio.campaign.slide'):
+    for model in ('product.template','product.product','product.combo','product.combo.item','stock.quant','lumio.campaign.slide'):
         if not env[model].with_user(user).has_access('read') or env[model].with_user(user).has_access('write'):
             raise ValueError('The integration user requires catalog read access without write privileges')
     supplied = os.environ.get('ODOO_API_KEY', '')

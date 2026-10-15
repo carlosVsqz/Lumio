@@ -50,7 +50,7 @@ class OdooGraphQlTests {
         properties.add("ODOO_WEBSITE_ID",() -> "1"); properties.add("ODOO_PRICELIST_ID",() -> "2"); properties.add("ODOO_WAREHOUSE_ID",() -> "3");
     }
     @LocalServerPort int port;
-    @BeforeEach void reset() { stub.status=200; stub.published=true; stub.campaignRows="[]"; stub.requests.clear(); }
+    @BeforeEach void reset() { stub.status=200; stub.published=true; stub.campaignRows="[]"; stub.comboProducts=false; stub.onlyCombos=false; stub.requests.clear(); }
     @AfterAll static void stop() { stub.close(); }
     private WebTestClient client() { return WebTestClient.bindToServer().baseUrl("http://localhost:"+port).responseTimeout(Duration.ofSeconds(15)).build(); }
     @Test void sharesSnapshotAcrossRootFieldsAndExposesOnlyLumioData() {
@@ -71,6 +71,38 @@ class OdooGraphQlTests {
             .exchange().expectStatus().isOk().expectBody().jsonPath("$.errors[0].extensions.code").isEqualTo("CATALOG_UNAVAILABLE")
             .jsonPath("$.errors[0].extensions.reason").isEqualTo("AUTHENTICATION").returnResult();
         assertThat(new String(response.getResponseBody(),java.nio.charset.StandardCharsets.UTF_8)).doesNotContain("test-only-api-key","server secret","Demo");
+    }
+    @Test void publishedCombosDoNotBreakCatalogPagingOrFavoriteLookup() {
+        stub.comboProducts=true;
+        var query="""
+            query($id:ID!) {
+              catalog { items { id } }
+              itemPage(pageSize:12) { totalCount items { id } }
+              itemBySlug(slug:"combo-de-prueba-100") { id type available variants { priceMinor } comboGroups { id options { variantId extraPriceMinor available maxQuantity attributes { name value } } } }
+              itemsByIds(catalogId:$id,ids:["item-100","item-10"]) { id item { id } }
+            }
+            """;
+        client().post().uri("/graphql").bodyValue(Map.of("query",query,"variables",Map.of("id",identity.id())))
+            .exchange().expectStatus().isOk().expectBody().jsonPath("$.errors").doesNotExist()
+            .jsonPath("$.data.catalog.items.length()").isEqualTo(3)
+            .jsonPath("$.data.itemPage.totalCount").isEqualTo(3)
+            .jsonPath("$.data.itemBySlug.type").isEqualTo("COMBO")
+            .jsonPath("$.data.itemBySlug.available").isEqualTo(true)
+            .jsonPath("$.data.itemBySlug.variants[0].priceMinor").isEqualTo(10000)
+            .jsonPath("$.data.itemBySlug.comboGroups[0].options[1].extraPriceMinor").isEqualTo(500)
+            .jsonPath("$.data.itemBySlug.comboGroups[0].options[1].maxQuantity").isEqualTo(3)
+            .jsonPath("$.data.itemsByIds[0].item.id").isEqualTo("item-100")
+            .jsonPath("$.data.itemsByIds[1].item.id").isEqualTo("item-10");
+        assertThat(stub.requests.stream().filter(r -> r.model().equals("product.template") && r.method().equals("search_read")).count()).isEqualTo(1);
+    }
+    @Test void comboOnlyCatalogRemainsBrowsable() {
+        stub.onlyCombos=true;
+        client().post().uri("/graphql").bodyValue(Map.of("query","{catalog{name items{id}} itemPage{totalCount items{id}}}"))
+            .exchange().expectStatus().isOk().expectBody().jsonPath("$.errors").doesNotExist()
+            .jsonPath("$.data.catalog.name").isEqualTo("Tienda de prueba")
+            .jsonPath("$.data.catalog.items[0].id").isEqualTo("item-100")
+            .jsonPath("$.data.itemPage.totalCount").isEqualTo(1)
+            .jsonPath("$.data.itemPage.items[0].id").isEqualTo("item-100");
     }
     @Test void servesSafeImagesAndRefusesUnpublishedOnes() {
         client().get().uri("/catalog-media/template/10").exchange().expectStatus().isOk().expectHeader().contentType("image/png")

@@ -1,4 +1,5 @@
 import type { CatalogItem, CatalogMetadata } from '../features/catalog/data-access/catalog.models';
+import { minimumItemPrice } from '../features/catalog/catalog-presentation.ts';
 
 export function publicSiteUrl(value: string): string {
   const url = new URL(value);
@@ -28,9 +29,9 @@ export function articleSeo(item: CatalogItem, catalog: CatalogMetadata, origin: 
     '@context': 'https://schema.org', '@type': item.type === 'SERVICE' ? 'Service' : 'Product',
     '@id': url + '#article', url, name: item.name, description,
     ...(categories ? { category: categories } : {}),
-    ...(item.type === 'PRODUCT' ? { sku: item.id } : { provider: { '@type': 'Organization', name: catalog.name } }),
+    ...(item.type !== 'SERVICE' ? { sku: item.id } : { provider: { '@type': 'Organization', name: catalog.name } }),
     ...(item.images.length ? { image: item.images.map(image => new URL(image.url, origin + '/').href) } : {}),
-    offers: item.variants.map(variant => ({
+    offers: item.type==='COMBO' ? { '@type':'AggregateOffer', lowPrice:decimalPrice(minimumItemPrice(item),catalog.currencyDecimals),priceCurrency:catalog.currency,url } : item.variants.map(variant => ({
       '@type': 'Offer', '@id': url + '#variant-' + encodeURIComponent(variant.id), url,
       name: variant.name, sku: variant.id, price: decimalPrice(variant.priceMinor, catalog.currencyDecimals),
       priceCurrency: catalog.currency, availability: `https://schema.org/${item.available && variant.available ? 'InStock' : 'OutOfStock'}`,

@@ -90,6 +90,37 @@ public final class CatalogValidator {
                 require(combinations.add(attributes), variantPath + ".attributes", "duplicates a variant attribute combination");
             }
             var classification = new HashSet<dev.lumio.core.domain.VariantAttribute>();
+            require(item.type() == dev.lumio.core.domain.CatalogItemType.COMBO || item.comboGroups().isEmpty(), path + ".comboGroups", "requires COMBO type");
+            require(item.type() != dev.lumio.core.domain.CatalogItemType.COMBO || !item.comboGroups().isEmpty(), path + ".comboGroups", "must contain component groups");
+            require(item.comboGroups().size() <= 100, path + ".comboGroups", "exceeds 100 groups");
+            var groupIds = new HashSet<String>();
+            for (var group:item.comboGroups()) {
+                text(group.id(), path + ".comboGroups.id"); text(group.name(), path + ".comboGroups.name");
+                require(group.id().matches("[A-Za-z0-9][A-Za-z0-9_-]*") && groupIds.add(group.id()), path + ".comboGroups.id", "invalid or duplicate ID");
+                require(group.options().size() <= 200, path + ".comboGroups.options", "exceeds 200 options");
+                var optionIds = new HashSet<String>();
+                for (var option:group.options()) {
+                    text(option.id(), path + ".comboGroups.options.id"); text(option.name(), path + ".comboGroups.options.name");
+                    require(option.id().matches("[A-Za-z0-9][A-Za-z0-9_-]*") && optionIds.add(option.id()), path + ".comboGroups.options.id", "invalid or duplicate ID");
+                    require(option.variantId() != null && option.variantId().matches("[A-Za-z0-9][A-Za-z0-9_-]*"), path + ".comboGroups.options.variantId", "invalid reference");
+                    require(option.maxQuantity() == null || option.maxQuantity() >= 0, path + ".comboGroups.options.maxQuantity", "must be nonnegative");
+                    require(!option.available() || option.maxQuantity() == null || option.maxQuantity() > 0, path + ".comboGroups.options.available", "contradicts component stock");
+                    var names = new HashSet<String>();
+                    for (var attribute:option.attributes()) {
+                        text(attribute.name(), path + ".comboGroups.options.attributes.name"); text(attribute.value(), path + ".comboGroups.options.attributes.value");
+                        require(names.add(attribute.name()), path + ".comboGroups.options.attributes", "duplicate attribute");
+                    }
+                }
+            }
+            long minimumExtra=0, maximumExtra=0;
+            for (var group:item.comboGroups()) {
+                minimumExtra+=group.options().stream().mapToInt(dev.lumio.core.domain.ComboOption::extraPriceMinor).min().orElse(0);
+                maximumExtra+=group.options().stream().mapToInt(dev.lumio.core.domain.ComboOption::extraPriceMinor).max().orElse(0);
+            }
+            for (var variant:item.variants()) {
+                require(variant.priceMinor()+minimumExtra>=0 && variant.priceMinor()+maximumExtra<=Integer.MAX_VALUE,
+                    path + ".comboGroups", "configured prices must fit nonnegative integer minor units");
+            }
             for (var attribute : item.attributes()) {
                 text(attribute.name(), path + ".attributes.name");
                 text(attribute.value(), path + ".attributes.value");

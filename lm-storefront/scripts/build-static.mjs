@@ -1,3 +1,4 @@
+import { COMBO_FIELDS } from '../src/app/features/catalog/data-access/catalog.models.ts';
 import { spawn } from 'node:child_process';
 import { readFile, writeFile, rm } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
@@ -19,6 +20,7 @@ try {
       catalog { branding { logoUrl primaryColor } name description currency currencyDecimals whatsappNumber categories { id slug name description }
         items { id slug type name description categoryIds available images { url alt }
           variants { id slug name priceMinor available attributes { name value } }
+          ${COMBO_FIELDS}
         }
       }
       items { slug }

@@ -29,7 +29,7 @@ export class CatalogQuickView {
   readonly image = computed(() => this.item.images[this.index()] ?? null);
   readonly available = isItemAvailable(this.item);
   readonly price = formatMinorPrice(minimumItemPrice(this.item), this.data.catalog.currencyDecimals, this.data.catalog.currency);
-  readonly variedPrice = new Set(this.item.variants.map(variant => variant.priceMinor)).size > 1;
+  readonly variedPrice = this.item.type==='COMBO' || new Set(this.item.variants.map(variant => variant.priceMinor)).size > 1;
   readonly categories = this.data.catalog.categories.filter(category => this.item.categoryIds.includes(category.id)).map(category => category.name).join(' · ')
     || (this.item.type === 'SERVICE' ? 'Servicio' : 'Producto');
   close() { this.dialog.close(); }

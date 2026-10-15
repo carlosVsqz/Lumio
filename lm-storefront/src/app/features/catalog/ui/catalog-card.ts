@@ -20,7 +20,7 @@ export class CatalogCard {
   readonly available = computed(() => isItemAvailable(this.item()));
   readonly price = computed(() => formatMinorPrice(minimumItemPrice(this.item()), this.catalog().currencyDecimals, this.catalog().currency));
   readonly categories = computed(() => this.catalog().categories.filter(c => this.item().categoryIds.includes(c.id)).map(c => c.name).join(' · '));
-  readonly variedPrice = computed(() => new Set(this.item().variants.map(v => v.priceMinor)).size > 1);
+  readonly variedPrice = computed(() => this.item().type==='COMBO' || new Set(this.item().variants.map(v => v.priceMinor)).size > 1);
   openQuickView(event: MouseEvent) {
     event.preventDefault(); event.stopPropagation();
     if (this.quickView) return;

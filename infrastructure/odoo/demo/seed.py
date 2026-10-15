@@ -112,7 +112,7 @@ record('lumio.campaign.slide','campaign_draft',{'title':'Borrador demo: no debe 
 admin=env.ref('base.user_admin')
 admin.write({'login':settings['admin_login'],'password':settings['admin_password'],'group_ids':[Command.link(env.ref('lumio_campaign.group_campaign_manager').id)]})
 read_group=record('res.groups','catalog_reader',{'name':'Lumio Demo: catálogo solo lectura','implied_ids':[Command.link(env.ref('base.group_user').id)],'api_key_duration':90})
-read_models=['website','stock.warehouse','product.pricelist','product.pricelist.item','res.currency','product.template','product.product',
+read_models=['website','stock.warehouse','product.pricelist','product.pricelist.item','res.currency','product.template','product.product','product.combo','product.combo.item',
     'product.public.category','product.template.attribute.value','product.template.attribute.line','product.attribute','product.attribute.value','product.image',
     'stock.quant','stock.move','stock.location','stock.picking','stock.picking.type']
 for model in read_models:

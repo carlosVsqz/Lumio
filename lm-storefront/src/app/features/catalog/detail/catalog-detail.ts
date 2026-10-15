@@ -17,9 +17,11 @@ import { QuantityInput } from '../../../shared/ui/quantity-input';
 import { UiIcon } from '../../../shared/ui/ui-icon';
 import { minimumItemPrice } from '../catalog-presentation';
 import { FavoriteButton } from '../../wishlist/favorite-button';
+import { ComboPicker } from './combo-picker';
+import { evaluateCombo, ComboChoices } from './combo-selection';
 
 @Component({
-  selector: 'app-catalog-detail', standalone: true, imports: [RouterLink, ProductGallery, VariantPicker, QuantityInput, UiIcon, FavoriteButton],
+  selector: 'app-catalog-detail', standalone: true, imports: [RouterLink, ProductGallery, VariantPicker, QuantityInput, UiIcon, FavoriteButton, ComboPicker],
   templateUrl: './catalog-detail.html', host: { class: 'block' },
 })
 export class CatalogDetail {
@@ -35,19 +37,23 @@ export class CatalogDetail {
   readonly loading = signal(true);
   readonly error = signal(false);
   readonly choices = signal<Record<string, string>>(Object.create(null));
+  readonly comboChoices = signal<ComboChoices>(Object.create(null));
   readonly quantityText = signal('1');
   readonly message = signal('');
   readonly options = computed(() => this.item() ? attributeOptions(this.item()!) : []);
   readonly complete = computed(() => this.options().every(option => Object.hasOwn(this.choices(), option.name)));
   readonly variant = computed(() => this.item() ? resolveVariant(this.item()!, this.choices()) : null);
   readonly quantity = computed(() => positiveQuantity(this.quantityText()));
-  readonly addEnabled = computed(() => this.order.ready() && !!this.item() && canAdd(this.item()!, this.variant(), this.quantity()));
+  readonly combo = computed(() => this.item()?evaluateCombo(this.item()!,this.variant(),this.comboChoices(),this.quantity()):null);
+  readonly startingPrice = computed(() => !this.variant() || this.item()?.type==='COMBO' && !this.combo()?.complete);
+  readonly addEnabled = computed(() => this.order.ready() && !!this.item() && canAdd(this.item()!, this.variant(), this.quantity())
+    && (this.item()!.type!=='COMBO' || !!this.combo()?.available));
   readonly categories = computed(() => this.catalog()?.categories.filter(category =>
     this.item()?.categoryIds.includes(category.id)).map(category => category.name).join(' · ') || 'Catálogo');
   readonly price = computed(() => {
     const item = this.item(), catalog = this.catalog();
     if (!item || !catalog) return '';
-    return formatMinorPrice(this.variant()?.priceMinor ?? minimumItemPrice(item),
+    return formatMinorPrice(item.type==='COMBO'?(this.combo()?.priceMinor??minimumItemPrice(item)):(this.variant()?.priceMinor ?? minimumItemPrice(item)),
       catalog.currencyDecimals, catalog.currency);
   });
 
@@ -79,7 +85,8 @@ export class CatalogDetail {
     this.clearChoices(); this.quantityText.set('1'); this.message.set('');
   }
 
-  clearChoices() { this.choices.set(Object.create(null)); this.message.set(''); }
+  clearChoices() { this.choices.set(Object.create(null)); this.comboChoices.set(Object.create(null)); this.message.set(''); }
+  chooseComponent(groupId:string,optionId:string) { this.comboChoices.update(choices=>({...choices,[groupId]:optionId}));this.message.set(''); }
   choose(name: string, value: string) {
     const choices = Object.assign(Object.create(null), this.choices());
     if (choices[name] === value) delete choices[name];
@@ -88,7 +95,7 @@ export class CatalogDetail {
   }
 
   add() {
-    this.message.set(this.item() && this.catalog() && this.order.add(this.item()!, this.variant(), this.quantity(), this.catalog()!)
+    this.message.set(this.item() && this.catalog() && this.order.add(this.item()!, this.variant(), this.quantity(), this.catalog()!,this.comboChoices())
       ? 'Añadido a tu pedido.' : this.order.notice() || 'Revisa la variante, su disponibilidad y la cantidad.');
   }
 }

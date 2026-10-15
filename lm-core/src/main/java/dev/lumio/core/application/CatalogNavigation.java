@@ -68,7 +68,12 @@ public final class CatalogNavigation {
 
     private static int displayPrice(CatalogItem item) {
         var available = item.available() ? item.variants().stream().filter(CatalogVariant::available).toList() : List.<CatalogVariant>of();
-        return (available.isEmpty() ? item.variants() : available).stream().mapToInt(CatalogVariant::priceMinor).min().orElseThrow();
+        long price = (available.isEmpty() ? item.variants() : available).stream().mapToInt(CatalogVariant::priceMinor).min().orElseThrow();
+        for (var group : item.comboGroups()) {
+            var choices = group.options().stream().filter(dev.lumio.core.domain.ComboOption::available).toList();
+            price += (choices.isEmpty() ? group.options() : choices).stream().mapToInt(dev.lumio.core.domain.ComboOption::extraPriceMinor).min().orElse(0);
+        }
+        return Math.toIntExact(price);
     }
 
     /** Reject invalid navigation before performing any potentially remote catalog reads. */

@@ -3,8 +3,9 @@ import { firstValueFrom } from 'rxjs';
 import { CatalogApi } from '../catalog/data-access/catalog-api';
 import { CatalogItem, CatalogMetadata, CatalogVariant } from '../catalog/data-access/catalog.models';
 import { canAdd } from '../catalog/detail/variant-selection';
+import type { ComboChoices } from '../catalog/detail/combo-selection';
 import { LocalOrder, addLine, editQuantity, lineFromItem, readOrder, quantityFromText,
-  reconcileOrder, writeOrder, total, whatsappDraft } from './order-model';
+  reconcileOrder, writeOrder, total, whatsappDraft, lineKey } from './order-model';
 
 @Injectable({ providedIn: 'root' })
 export class OrderStore {
@@ -43,10 +44,10 @@ export class OrderStore {
     this.changes.set([]); this.blocked.set([]); this.checking.set(false);
   }
 
-  add(item: CatalogItem, variant: CatalogVariant | null, quantity: number | null, catalog: CatalogMetadata): boolean {
+  add(item: CatalogItem, variant: CatalogVariant | null, quantity: number | null, catalog: CatalogMetadata, choices:ComboChoices={}): boolean {
     if (!this.ready() || !canAdd(item, variant, quantity) || !variant || quantity === null) return false;
     try {
-      const next = addLine(this.order(), catalog, lineFromItem(item, variant, quantity));
+      const next = addLine(this.order(), catalog, lineFromItem(item, variant, quantity,choices));
       this.invalidate(); this.state.set(next); this.persist();
       return true;
     } catch (error) { this.notice.set(error instanceof Error ? error.message : 'No se pudo añadir la línea.'); return false; }
@@ -54,7 +55,7 @@ export class OrderStore {
 
   updateQuantity(variantId: string, text: string): boolean {
     const quantity = quantityFromText(text);
-    if (!this.ready() || !this.lines().some(line => line.variantId === variantId)) return false;
+    if (!this.ready() || !this.lines().some(line => lineKey(line) === variantId)) return false;
     this.invalidate();
     if (quantity === null) return false;
     this.state.update(order => editQuantity(order, variantId, quantity));
@@ -63,7 +64,7 @@ export class OrderStore {
 
   remove(variantId: string) {
     if (!this.ready()) return;
-    this.invalidate(); this.state.update(order => ({ ...order, lines: order.lines.filter(line => line.variantId !== variantId) })); this.persist();
+    this.invalidate(); this.state.update(order => ({ ...order, lines: order.lines.filter(line => lineKey(line) !== variantId) })); this.persist();
   }
 
   async prepare() {

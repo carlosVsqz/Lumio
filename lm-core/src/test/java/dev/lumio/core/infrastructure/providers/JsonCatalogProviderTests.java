@@ -13,6 +13,22 @@ import org.springframework.core.io.DefaultResourceLoader;
 import static org.junit.jupiter.api.Assertions.*;
 
 class JsonCatalogProviderTests {
+    @Test void readsGenericComboGroupsAndRejectsInvalidPricesOrReferences() throws IOException {
+        var resource="classpath:catalog/combos.json";
+        var combo=new JsonCatalogProvider(new DefaultResourceLoader(),resource).catalog().items().getLast();
+        assertEquals(dev.lumio.core.domain.CatalogItemType.COMBO,combo.type());
+        assertEquals(2,combo.comboGroups().size());
+        assertEquals(500,combo.comboGroups().getFirst().options().getFirst().extraPriceMinor());
+        String json=new String(new DefaultResourceLoader().getResource(resource).getInputStream().readAllBytes(),java.nio.charset.StandardCharsets.UTF_8);
+        for (var mutation:java.util.List.of(json.replace("\"extraPriceMinor\": 500","\"extraPriceMinor\": 1.5"),
+            json.replace("\"extraPriceMinor\": 500","\"extraPriceMinor\": -10001"),
+            json.replace("\"variantId\": \"componente-azul\"","\"variantId\": \"invalid id\""),
+            json.replace("\"maxQuantity\": 3","\"maxQuantity\": 0"),
+            json.replace("\"id\": \"natural\"","\"id\": \"azul\""))) {
+            var file=directory.resolve("combo-invalid.json");Files.writeString(file,mutation);
+            assertThrows(IllegalArgumentException.class,()->load(file));
+        }
+    }
     @Test void readsOptionalClassificationAndKeepsVariantsUnchanged() throws IOException {
         var mapper=tools.jackson.databind.json.JsonMapper.builder().build();
         var root=mapper.readTree(example());

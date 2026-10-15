@@ -76,7 +76,17 @@ public final class JsonCatalogProvider implements CatalogProvider {
             list(node, "images", path + ".images", (image, p) -> {
                 object(image, p);
                 return new CatalogImage(text(image, "url", p), text(image, "alt", p));
-            }), bool(node, "available", path), list(node, "variants", path + ".variants", this::variant), itemType(node, path), itemAttributes(node,path));
+            }), bool(node, "available", path), list(node, "variants", path + ".variants", this::variant), itemType(node, path), itemAttributes(node,path),
+            node.has("comboGroups") ? list(node,"comboGroups",path + ".comboGroups",(group,p) -> {
+                object(group,p);
+                return new ComboGroup(text(group,"id",p),text(group,"name",p),list(group,"options",p + ".options",(option,op) -> {
+                    object(option,op);
+                    return new ComboOption(text(option,"id",op),text(option,"variantId",op),text(option,"name",op),
+                        list(option,"attributes",op + ".attributes",(attr,ap) -> new VariantAttribute(text(attr,"name",ap),text(attr,"value",ap))),
+                        integer(option,"extraPriceMinor",op),bool(option,"available",op),
+                        option.has("maxQuantity") && !option.path("maxQuantity").isNull() ? integer(option,"maxQuantity",op) : null);
+                }));
+            }) : List.of());
     }
 
     private List<VariantAttribute> itemAttributes(JsonNode node,String path) {
@@ -93,7 +103,7 @@ public final class JsonCatalogProvider implements CatalogProvider {
     private static CatalogItemType itemType(JsonNode node, String path) {
         if (!node.has("type")) return CatalogItemType.PRODUCT;
         try { return CatalogItemType.valueOf(text(node, "type", path)); }
-        catch (IllegalArgumentException ex) { throw invalid(path + ".type", "must be PRODUCT or SERVICE"); }
+        catch (IllegalArgumentException ex) { throw invalid(path + ".type", "must be PRODUCT, SERVICE or COMBO"); }
     }
 
     private CatalogVariant variant(JsonNode node, String path) {

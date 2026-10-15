@@ -47,6 +47,51 @@ class OdooCatalogProviderTests {
         assertThat(provider().catalog().items().getFirst().variants().getFirst().available()).isFalse();
         assertThat(provider(OdooSettings.StockPolicy.WEBSITE,3000).catalog().items().getFirst().variants().getFirst().available()).isTrue();
     }
+    @Test void adaptsPublishedCombosWithConcreteVariantsStockAndPricelistBasePrice() {
+        stub.comboProducts=true;
+        var catalog=provider().catalog();
+        assertThat(catalog.items()).extracting(item -> item.id()).containsExactly("item-100","item-10","item-20");
+        var combo=catalog.items().getFirst();
+        assertThat(combo.type()).isEqualTo(CatalogItemType.COMBO);
+        assertThat(combo.available()).isTrue();
+        assertThat(combo.variants().getFirst().priceMinor()).isEqualTo(10000);
+        assertThat(combo.comboGroups()).hasSize(2);
+        var choices=combo.comboGroups().getFirst().options();
+        assertThat(choices.getFirst().available()).isFalse();
+        assertThat(choices.get(1).variantId()).isEqualTo("variant-12");
+        assertThat(choices.get(1).extraPriceMinor()).isEqualTo(500);
+        assertThat(choices.get(1).maxQuantity()).isEqualTo(3);
+        assertThat(choices.get(1).attributes().getFirst().value()).isEqualTo("M");
+        assertThat(combo.comboGroups().getLast().options().getFirst().maxQuantity()).isNull();
+        assertThat(stub.requests.stream().filter(r -> r.model().equals("product.template") && r.method().equals("search_read")))
+            .allSatisfy(r -> assertThat(r.body().path("domain").toString()).doesNotContain("combo"));
+    }
+    @Test void supportsComboOnlyCatalogAndUnpublishedComponents() {
+        stub.onlyCombos=true;
+        var combo=provider().catalog().items().getFirst();
+        assertThat(combo.available()).isTrue();
+        assertThat(combo.comboGroups().getFirst().options()).hasSize(2);
+        assertThat(stub.requests.stream().filter(r -> r.model().equals("product.product") && r.method().equals("search_read")))
+            .anySatisfy(r -> assertThat(r.body().path("context").path("active_test").asBoolean(true)).isFalse());
+    }
+    @Test void convertsSignedComboExtrasIntoPricelistCurrencyWithoutUsingComponentListPrice() {
+        stub.onlyCombos=true; stub.comboCurrency=8; stub.comboExtra="5.01";
+        assertThat(provider().catalog().items().getFirst().comboGroups().getFirst().options().get(1).extraPriceMinor()).isEqualTo(251);
+        stub.comboExtra="-5.01";
+        assertThat(provider().catalog().items().getFirst().comboGroups().getFirst().options().get(1).extraPriceMinor()).isEqualTo(-251);
+        stub.sourceRate="0"; assertFailure(provider()::catalog,"PRICE");
+    }
+    @Test void comboStockUsesFreeStockAndExplicitBackorderPolicy() {
+        stub.onlyCombos=true; stub.componentStock=0;
+        assertThat(provider().catalog().items().getFirst().available()).isFalse();
+        stub.backorder=true;
+        assertThat(provider().catalog().items().getFirst().available()).isFalse();
+        assertThat(provider(OdooSettings.StockPolicy.WEBSITE,3000).catalog().items().getFirst().available()).isTrue();
+    }
+    @Test void rejectsCrossCompanyComponentsAndNeverReplacesFailedCombosWithDemo() {
+        stub.onlyCombos=true; stub.componentCompany=8; assertFailure(provider()::catalog,"CONFIGURATION");
+        stub.componentCompany=7; stub.status=401; assertFailure(provider()::catalog,"AUTHENTICATION");
+    }
     @Test void usesCurrencyPrecisionAndRoundingQuantum() {
         stub.currency="KWD"; stub.currencyDecimals=3; stub.rounding="0.001"; stub.price="1.2345";
         assertThat(provider().catalog().items().getFirst().variants().getFirst().priceMinor()).isEqualTo(1235);

@@ -60,7 +60,7 @@ test('persists and recovers only validated snapshots without phone numbers or pr
 test('rejects malformed, unsupported, oversized and tampered recovered orders as a whole', () => {
   const stored = JSON.parse(serializeOrder(order));
   for (const change of [
-    value => value.version = 2,
+    value => value.version = 3,
     value => value.catalog.currencyDecimals = 1.5,
     value => value.catalog.currency = 'invalid',
     value => value.catalog = null,

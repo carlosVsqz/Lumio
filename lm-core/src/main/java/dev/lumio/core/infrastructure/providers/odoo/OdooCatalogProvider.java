@@ -72,9 +72,10 @@ public final class OdooCatalogProvider implements CatalogProvider {
             var categoryRecords = client.search("product.public.category", siteDomain(), categoryFields, context);
             var categories = categoryRecords.stream().map(c -> new Category("category-" + id(c), slug(text(c,"name"),id(c)), text(c,"name"), description(c))).toList();
             var categoryIds = new HashSet<>(categories.stream().map(Category::id).toList());
-            var templateFields = fields("product.template", context, List.of("website_description", "description_sale", "image_128", "product_template_image_ids", "attribute_line_ids"),
+            var templateFields = fields("product.template", context, List.of("website_description", "description_sale", "image_128", "product_template_image_ids", "attribute_line_ids", "combo_ids"),
                 "id", "name", "type", "active", "sale_ok", "is_published", "website_id", "public_categ_ids", "company_id");
-            var domain = new ArrayList<Object>(List.of(List.of("active","=",true), List.of("sale_ok","=",true), List.of("is_published","=",true)));
+            var domain = new ArrayList<Object>(List.of(List.of("active","=",true), List.of("sale_ok","=",true),
+                List.of("is_published","=",true)));
             domain.addAll(siteDomain()); domain.addAll(List.of("|",List.of("company_id","=",false),List.of("company_id","=",company)));
             var templates = client.search("product.template", domain, templateFields, context);
             var templateIds = templates.stream().map(OdooCatalogProvider::id).toList();
@@ -107,8 +108,8 @@ public final class OdooCatalogProvider implements CatalogProvider {
             var extras = templates.stream().anyMatch(t -> t.has("product_template_image_ids")) && !templateIds.isEmpty()
                 ? client.search("product.image",List.of("|",List.of("product_tmpl_id","in",templateIds),List.of("product_variant_id","in",new ArrayList<>(variantTemplates.keySet()))),client.requireFields("product.image",context,"id","name","product_tmpl_id","product_variant_id","image_128"),context) : List.<JsonNode>of();
             var items = new ArrayList<CatalogItem>();
+            var comboGroups = new OdooComboReader(client,settings).read(templates,context,relation(pricelist.get("currency_id")),rounding,decimals);
             for (var template : templates) {
-                if (text(template,"type").equals("combo")) throw failure("COMPATIBILITY", "El MVP no admite productos combinados de Odoo.");
                 var itemVariants = new ArrayList<CatalogVariant>(); var images = new ArrayList<CatalogImage>();
                 if (hasImage(template,"image_128")) images.add(image("template",id(template),text(template,"name")));
                 for (var variant : variants) if (relation(variant.get("product_tmpl_id")) == id(template)) {
@@ -133,9 +134,13 @@ public final class OdooCatalogProvider implements CatalogProvider {
                 variants.stream().filter(variant -> relation(variant.get("product_tmpl_id")) == id(template))
                     .flatMap(variant -> ids(variant.get("product_template_attribute_value_ids")).stream()).filter(filterableValues::contains)
                     .map(valueMap::get).map(Objects::requireNonNull).forEach(classification::add);
+                var groups=comboGroups.getOrDefault(id(template),List.of());
+                boolean componentsAvailable=ComboAvailability.canConfigure(groups);
                 items.add(new CatalogItem("item-"+id(template),slug(text(template,"name"),id(template)),text(template,"name"),description(template),
                     ids(template.get("public_categ_ids")).stream().map(i -> "category-"+i).filter(categoryIds::contains).toList(),images,
-                    itemVariants.stream().anyMatch(CatalogVariant::available),itemVariants,text(template,"type").equals("service") ? CatalogItemType.SERVICE : CatalogItemType.PRODUCT,classification.stream().distinct().toList()));
+                    componentsAvailable && itemVariants.stream().anyMatch(CatalogVariant::available),itemVariants,
+                    text(template,"type").equals("combo") ? CatalogItemType.COMBO : text(template,"type").equals("service") ? CatalogItemType.SERVICE : CatalogItemType.PRODUCT,
+                    classification.stream().distinct().toList(),groups));
             }
             var logoFields = fields("website", context, List.of("logo"), "id");
             var logo = client.readOne("website", settings.websiteId(), logoFields, context);

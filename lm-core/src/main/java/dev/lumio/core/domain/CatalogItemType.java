@@ -1,3 +1,3 @@
 package dev.lumio.core.domain;
 
-public enum CatalogItemType { PRODUCT, SERVICE }
+public enum CatalogItemType { PRODUCT, SERVICE, COMBO }

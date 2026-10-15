@@ -4,7 +4,13 @@ import java.util.List;
 
 public record CatalogItem(String id, String slug, String name, String description,
                           List<String> categoryIds, List<CatalogImage> images,
-                          boolean available, List<CatalogVariant> variants, CatalogItemType type, List<VariantAttribute> attributes) {
+                          boolean available, List<CatalogVariant> variants, CatalogItemType type, List<VariantAttribute> attributes,
+                          List<ComboGroup> comboGroups) {
+    public CatalogItem(String id, String slug, String name, String description,
+                       List<String> categoryIds, List<CatalogImage> images, boolean available,
+                       List<CatalogVariant> variants, CatalogItemType type, List<VariantAttribute> attributes) {
+        this(id,slug,name,description,categoryIds,images,available,variants,type,attributes,List.of());
+    }
     public CatalogItem(String id, String slug, String name, String description,
                        List<String> categoryIds, List<CatalogImage> images,
                        boolean available, List<CatalogVariant> variants, CatalogItemType type) {
@@ -22,5 +28,6 @@ public record CatalogItem(String id, String slug, String name, String descriptio
         images = List.copyOf(images);
         variants = List.copyOf(variants);
         attributes = List.copyOf(attributes);
+        comboGroups = List.copyOf(comboGroups);
     }
 }

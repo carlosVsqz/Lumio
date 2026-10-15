@@ -68,9 +68,25 @@ type CatalogVariant {
   priceMinor: Int!
   available: Boolean!
 }
-enum CatalogItemType { PRODUCT SERVICE }
+enum CatalogItemType { PRODUCT SERVICE COMBO }
+
+type ComboOption {
+  id: ID!
+  variantId: ID!
+  name: String!
+  attributes: [VariantAttribute!]!
+  extraPriceMinor: Int!
+  available: Boolean!
+  maxQuantity: Int
+}
+type ComboGroup {
+  id: ID!
+  name: String!
+  options: [ComboOption!]!
+}
 
 type CatalogItem {
+  comboGroups: [ComboGroup!]!
   attributes: [VariantAttribute!]!
   type: CatalogItemType!
   id: ID!

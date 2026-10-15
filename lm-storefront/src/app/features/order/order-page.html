@@ -14,7 +14,7 @@
 } @else {
   <div class="grid items-start gap-10 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-14">
     <section aria-label="Líneas del pedido" class="min-w-0">
-      @for (line of store.lines(); track line.variantId) {
+      @for (line of store.lines(); track lineKey(line)) {
         <article class="border-b border-line py-7 first:pt-0">
           <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
             <div class="min-w-0">
@@ -22,16 +22,26 @@
               <p class="mt-2 text-sm text-muted">{{ line.variantName }}</p>
               <p class="mt-2 break-words text-xs leading-5 text-muted">Ref. {{ line.itemId }} / {{ line.variantId }}</p>
             </div>
-            <button type="button" class="self-start px-0 py-2 text-sm font-normal text-muted underline underline-offset-4 hover:text-ink" [attr.aria-label]="'Eliminar ' + line.itemName + ', ' + line.variantName" (click)="store.remove(line.variantId)">Eliminar</button>
+            <button type="button" class="self-start px-0 py-2 text-sm font-normal text-muted underline underline-offset-4 hover:text-ink" [attr.aria-label]="'Eliminar ' + line.itemName + ', ' + line.variantName" (click)="store.remove(lineKey(line))">Eliminar</button>
           </div>
           @if (line.attributes.length) {
             <dl class="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm">
               @for (attribute of line.attributes; track attribute.name) { <div class="flex min-w-0 flex-wrap gap-2"><dt class="text-muted">{{ attribute.name }}:</dt><dd>{{ attribute.value }}</dd></div> }
             </dl>
           }
-          @if (!line.available) { <p class="mt-4 text-sm font-semibold text-unavailable-ink">No disponible. Elimina la línea o elige otra variante.</p> }
+          @if (line.components?.length) {
+            <ul class="mt-5 space-y-3 text-sm" aria-label="Componentes del combo">
+              @for (component of line.components; track component.groupId) {
+                <li><span class="text-muted">{{ component.groupName }}:</span> {{ component.name }}
+                  @for (attribute of component.attributes; track attribute.name) { <span class="text-muted"> · {{ attribute.name }}: {{ attribute.value }}</span> }
+                  <span class="block text-xs text-muted">{{ component.variantId }} · {{ line.quantity }} unidades</span>
+                </li>
+              }
+            </ul>
+          }
+          @if (!line.available) { <p class="mt-4 text-sm font-semibold text-unavailable-ink">No disponible. Ajusta la cantidad o vuelve a configurar la selección.</p> }
           <div class="mt-6 flex flex-wrap items-end justify-between gap-5">
-            <app-quantity-input [id]="'qty-' + line.variantId" [label]="'Cantidad de ' + line.variantName" [value]="quantityText(line)" (change)="edit(line, $event)" />
+            <app-quantity-input [id]="'qty-' + lineKey(line)" [label]="'Cantidad de ' + line.itemName + ', ' + line.variantName" [value]="quantityText(line)" (valueChange)="edit(line, $event)" />
             <div class="min-w-0 text-right tabular-nums"><p class="text-xs leading-6 text-muted">{{ price(line.priceMinor) }} por unidad</p><p class="mt-1 text-base font-semibold">Subtotal: {{ subtotal(line) }}</p></div>
           </div>
         </article>

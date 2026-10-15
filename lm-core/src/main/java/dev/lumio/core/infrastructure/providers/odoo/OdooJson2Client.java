@@ -32,7 +32,7 @@ public final class OdooJson2Client {
     public JsonNode call(String model, String method, Map<String, Object> arguments, Map<String, Object> context) {
         if (!Set.of("fields_get", "search_read", "read", "get_contextual_price").contains(method)
             || !Set.of("website", "stock.warehouse", "product.pricelist", "res.currency", "product.template", "product.product",
-                "product.public.category", "product.template.attribute.value", "product.template.attribute.line", "product.image", "product.attribute", "lumio.campaign.slide").contains(model)
+                "product.public.category", "product.template.attribute.value", "product.template.attribute.line", "product.image", "product.attribute", "product.combo", "product.combo.item", "lumio.campaign.slide").contains(model)
             || (method.equals("get_contextual_price") && !model.equals("product.product"))) throw new IllegalArgumentException("Odoo operation is not allowlisted for read-only catalog access");
         var body = new LinkedHashMap<>(arguments);
         body.put("context", context);

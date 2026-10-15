@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { map } from 'rxjs';
-import { CatalogBrowseData, CatalogItem, CatalogMetadata } from './catalog.models';
+import { COMBO_FIELDS, CatalogBrowseData, CatalogItem, CatalogMetadata } from './catalog.models';
 import { CATALOG_PAGE_SIZE, CatalogQuery, SORT_OPTIONS } from './catalog-query';
 import type { OrderSnapshot } from '../../order/order-model';
 import { CATALOG_API_URL } from '../../../core/site-config';
@@ -19,6 +19,7 @@ export class CatalogApi {
         itemsByIds(catalogId:$catalogId, ids:$ids) { id item {
           id slug type name description categoryIds available attributes { name value } images { url alt }
           variants { id slug name priceMinor available attributes { name value } }
+          ${COMBO_FIELDS}
         } }
       }`, variables:{catalogId,ids},
     }, {transferCache:false}).pipe(map(response=>{
@@ -51,6 +52,7 @@ export class CatalogApi {
         id name description currency currencyDecimals whatsappNumber branding { logoUrl primaryColor } categories { id slug name description }
         items { id slug type name description categoryIds available attributes { name value } images { url alt }
           variants { id slug name priceMinor available attributes { name value } }
+          ${COMBO_FIELDS}
         }
       } }`,
     }, { transferCache: false }).pipe(map(response => {
@@ -66,6 +68,7 @@ export class CatalogApi {
         itemBySlug(slug: $slug) {
           id slug type name description categoryIds available attributes { name value } images { url alt }
           variants { id slug name priceMinor available attributes { name value } }
+          ${COMBO_FIELDS}
         }
       }`, variables: { slug },
     }).pipe(map(response => {
@@ -89,6 +92,7 @@ export class CatalogApi {
           items {
             id slug type name description categoryIds available attributes { name value } images { url alt }
             variants { id slug name priceMinor available attributes { name value } }
+          ${COMBO_FIELDS}
           }
         }
       }`,
