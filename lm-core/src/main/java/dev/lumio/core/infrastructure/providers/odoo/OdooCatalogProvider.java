@@ -225,7 +225,7 @@ public final class OdooCatalogProvider implements CatalogProvider {
         context.put("bin_size",false);
         String imageField=kind.equals("attribute")?"image":"image_1024";
         String encoded=text(read(model,id,context,"id",imageField),imageField);
-        return decodeImage(encoded,false);
+        return decodeImage(encoded,kind.equals("attribute"));
     }
     private Image decodeImage(String encoded, boolean allowSvg) {
         if(encoded.isEmpty()) throw new ImageNotFoundException();

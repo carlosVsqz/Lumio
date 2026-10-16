@@ -12,8 +12,25 @@ import static org.assertj.core.api.Assertions.*;
 import java.time.Duration;
 import java.util.Map;
 
-@SpringBootTest(webEnvironment=SpringBootTest.WebEnvironment.RANDOM_PORT,properties="lumio.catalog.provider=odoo")
+@SpringBootTest(webEnvironment=SpringBootTest.WebEnvironment.RANDOM_PORT,properties={"lumio.catalog.provider=odoo","lumio.catalog.brand-attribute=Material"})
 class OdooGraphQlTests {
+    @Test void brandSvgDiscoveredThroughGraphQlIsServedAsAnImageInsteadOfABadGateway() {
+        var originalImage=stub.image;
+        try {
+            stub.classification=true;stub.attributeImages=true;
+            var svg="<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 70 70'><path d='M0 0h70v70H0z'/></svg>";
+            stub.image=java.util.Base64.getEncoder().encodeToString(svg.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            client().post().uri("/graphql").bodyValue(Map.of("query","{catalog{brandFacet{name values{value image{url alt}}}}}"))
+                .exchange().expectStatus().isOk().expectBody().jsonPath("$.errors").doesNotExist()
+                .jsonPath("$.data.catalog.brandFacet.values[0].image.url").isEqualTo("/catalog-media/attribute/33");
+            client().get().uri("/catalog-media/attribute/33").exchange().expectStatus().isOk()
+                .expectHeader().contentType("image/svg+xml").expectHeader().valueEquals("X-Content-Type-Options","nosniff")
+                .expectHeader().valueEquals("Cache-Control","no-store")
+                .expectBody(String.class).isEqualTo(svg);
+            stub.classificationHidden=true;
+            client().get().uri("/catalog-media/attribute/33").exchange().expectStatus().isNotFound();
+        } finally {stub.image=originalImage;stub.classification=false;stub.classificationHidden=false;stub.attributeImages=false;}
+    }
     @Test void detailExposesOnlyTheImagesMappedToEachVariant() {
         stub.ownVariantImage=true;stub.extraImage=true;
         try {

@@ -8,6 +8,24 @@ import org.junit.jupiter.params.provider.CsvSource;
 import static org.assertj.core.api.Assertions.*;
 
 class OdooCatalogProviderTests {
+    @Test void attributeLogosAcceptSafeSvgWhileKeepingPublicationAndActiveContentGuards() {
+        stub.classification=true;stub.attributeImages=true;
+        stub.image=java.util.Base64.getEncoder().encodeToString("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 70 70'><path d='M0 0h70v70H0z'/></svg>".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        assertThat(provider().catalog().attributeImages().getFirst().image().url()).isEqualTo("/catalog-media/attribute/33");
+        assertThat(provider().image("attribute",33).contentType()).isEqualTo("image/svg+xml");
+        // Product photography still uses the raster-only path.
+        assertFailure(()->provider().image("template",10),"PROTOCOL");
+        stub.published=false;
+        assertThatThrownBy(()->provider().image("attribute",33)).isInstanceOf(OdooCatalogProvider.ImageNotFoundException.class);
+        stub.published=true;
+        for(var svg:java.util.List.of("<svg xmlns='http://www.w3.org/2000/svg' onload='alert(1)'/>",
+                "<svg xmlns='http://www.w3.org/2000/svg'><script>alert(1)</script></svg>",
+                "<svg xmlns='http://www.w3.org/2000/svg'><image href='https://example.com/image.png'/></svg>",
+                "<!DOCTYPE svg [<!ENTITY x SYSTEM 'file:///etc/passwd'>]><svg xmlns='http://www.w3.org/2000/svg'>&x;</svg>")) {
+            stub.image=java.util.Base64.getEncoder().encodeToString(svg.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            assertFailure(()->provider().image("attribute",33),"PROTOCOL");
+        }
+    }
     @Test void adaptsNativeAttributeImagesWithoutPublishingHiddenOrUnusedValues() {
         stub.classification=true;stub.attributeImages=true;
         var catalog=provider().catalog();

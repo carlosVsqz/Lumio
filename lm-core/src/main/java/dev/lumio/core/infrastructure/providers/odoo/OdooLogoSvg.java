@@ -7,7 +7,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import org.w3c.dom.Element;
 import org.xml.sax.helpers.DefaultHandler;
 
-/** Website logos may be SVG; never accept active content, entities or remote resources. */
+/** Website and attribute/brand logos may be SVG; never accept active content or entities. */
 final class OdooLogoSvg {
     private OdooLogoSvg() {}
     static boolean isSafe(byte[] bytes) {
