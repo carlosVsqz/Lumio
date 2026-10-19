@@ -14,6 +14,7 @@
   --color-order-action: #1d4ed8;
   --color-order-strong: #1d4ed8;
   --color-search-hover: #166534;
+  --color-navigation-progress: #aa842b;
   --color-surface: #ffffff;
   --color-line: #e6e8e5;
   --color-background: #ffffff;
@@ -45,6 +46,7 @@
     --color-favorite: #ff8398;
     --color-order-action: #91b5ff;
     --color-search-hover: #9be0ac;
+    --color-navigation-progress: #d6b969;
     --color-available: #223b2b;
     --color-available-ink: #b0e5bd;
     --color-unavailable: #422b2d;

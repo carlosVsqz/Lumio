@@ -8,9 +8,10 @@ import { WishlistFeedback } from './features/wishlist/wishlist-feedback';
 import { StoreFooter } from './shared/ui/store-footer';
 import { CampaignCarousel } from './features/campaigns/campaign-carousel';
 import { PwaStatus } from './features/pwa/pwa-status';
+import { NavigationProgress } from './shared/ui/navigation-progress';
 
 @Component({
-  selector: 'app-root', standalone: true, imports: [RouterOutlet, StoreHeader, StoreFooter, WishlistFeedback, CampaignCarousel, PwaStatus],
+  selector: 'app-root', standalone: true, imports: [RouterOutlet, StoreHeader, StoreFooter, WishlistFeedback, CampaignCarousel, PwaStatus, NavigationProgress],
   templateUrl: './app.html',
   host: { '[style.--color-primary]': 'brand.color()', '[style.--color-accent]': 'brand.textColor()', '[style.--brand-contrast]': 'brand.contrast()', class: 'flex min-h-dvh flex-col' },
 })
