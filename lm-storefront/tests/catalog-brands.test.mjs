@@ -1,7 +1,19 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';
-import {brandLinks} from '../src/app/features/catalog/data-access/catalog-brands.ts';
+import {brandLinks,singleItemBrand} from '../src/app/features/catalog/data-access/catalog-brands.ts';
 import {parseCatalogQuery} from '../src/app/features/catalog/data-access/catalog-query.ts';
 import {toggleAttributeSelection} from '../src/app/features/catalog/data-access/catalog-attributes.ts';
+
+test('a single real brand is independent of stock and variant creation',()=>{
+  const brand={name:'Brand',value:'Apple'};
+  const item={available:false,attributes:[brand],variants:[{available:false,attributes:[brand]}]};
+  assert.deepEqual(singleItemBrand(item,'Brand'),brand);
+  assert.deepEqual(singleItemBrand({...item,variants:[{attributes:[]}]},'Brand'),brand);
+  assert.deepEqual(singleItemBrand({...item,attributes:[]},'Brand'),brand);
+  assert.equal(singleItemBrand(item,undefined),null);
+  assert.equal(singleItemBrand(item,'Marca'),null);
+  assert.equal(singleItemBrand({...item,attributes:[brand,{name:'Brand',value:'Other'}]},'Brand'),null);
+  assert.equal(singleItemBrand({...item,variants:[...item.variants,{attributes:[]}]},'Brand'),null);
+});
 
 test('brand navigation sorts real brands, counts products and encodes the same facet selection in a fresh URL',()=>{
   const facet={name:'Brand',values:[{value:'Zeta',count:2},{value:'Álamo',count:1},{value:'A & B / "Studio"',count:3}]};

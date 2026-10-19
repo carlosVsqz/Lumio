@@ -9,8 +9,11 @@
     <section class="min-w-0 lg:sticky lg:top-28 lg:max-w-[440px]" aria-labelledby="article-name">
       <p class="mb-3 text-xs font-semibold tracking-wider text-muted">{{ categories() }}</p>
       <div class="flex items-start justify-between gap-4"><h1 id="article-name" class="page-title min-w-0">{{ article.name }}</h1>@if (catalog(); as currentCatalog) { <app-favorite-button [itemId]="article.id" [catalogId]="currentCatalog.id" descriptionId="article-name" /> }</div>
+      @if (productBrand(); as brand) {
+        <dl class="mt-3 text-sm"><div class="flex flex-wrap items-baseline gap-x-2 gap-y-1"><dt class="text-muted">Marca</dt><dd class="min-w-0 font-medium wrap-anywhere">{{ brand.value }}</dd></div></dl>
+      }
       <p class="mt-5 mb-8 text-xl font-semibold tabular-nums">@if (startingPrice()) { <span class="mr-1 text-sm font-normal text-muted">Desde</span> }{{ price() }}</p>
-      <app-variant-picker [item]="article" [choices]="choices()" (choose)="choose($event.name,$event.value)" (reset)="clearChoices()" />
+      <app-variant-picker [item]="article" [choices]="choices()" [brandAttributeName]="catalog()?.brandFacet?.name" (choose)="choose($event.name,$event.value)" (reset)="clearChoices()" />
       @if (article.type === 'COMBO' && catalog(); as metadata) {
         <app-combo-picker [groups]="article.comboGroups ?? []" [choices]="comboChoices()" [quantity]="quantity()"
           [currency]="metadata.currency" [decimals]="metadata.currencyDecimals" (choose)="chooseComponent($event.groupId,$event.optionId)" />
@@ -35,11 +38,11 @@
       @if (article.description) {
         <p class="mt-9 max-w-prose whitespace-pre-line text-sm leading-7">{{ article.description }}</p>
       }
-      @if (article.attributes.length) {
+      @if (characteristics().length) {
         <details class="group mt-8 border-t border-line py-5">
           <summary class="flex min-h-11 cursor-pointer items-center justify-between gap-4 text-sm font-semibold">Características <app-ui-icon name="plus" class="group-open:rotate-45" /></summary>
           <dl class="mt-4 space-y-3 text-sm">
-            @for (attribute of article.attributes; track $index) {
+            @for (attribute of characteristics(); track $index) {
               <div><dt class="text-muted">{{ attribute.name }}</dt><dd class="mt-1">{{ attribute.value }}</dd></div>
             }
           </dl>

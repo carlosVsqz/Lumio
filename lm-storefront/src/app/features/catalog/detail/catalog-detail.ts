@@ -20,6 +20,7 @@ import { FavoriteButton } from '../../wishlist/favorite-button';
 import { ComboPicker } from './combo-picker';
 import { evaluateCombo, ComboChoices } from './combo-selection';
 import {variantImages} from './gallery-model';
+import { singleItemBrand } from '../data-access/catalog-brands';
 
 @Component({
   selector: 'app-catalog-detail', standalone: true, imports: [RouterLink, ProductGallery, VariantPicker, QuantityInput, UiIcon, FavoriteButton, ComboPicker],
@@ -41,9 +42,11 @@ export class CatalogDetail {
   readonly comboChoices = signal<ComboChoices>(Object.create(null));
   readonly quantityText = signal('1');
   readonly message = signal('');
-  readonly options = computed(() => this.item() ? attributeOptions(this.item()!) : []);
+  readonly productBrand = computed(() => this.item() ? singleItemBrand(this.item()!, this.catalog()?.brandFacet?.name) : null);
+  readonly characteristics = computed(() => this.item()?.attributes.filter(attribute => attribute.name !== this.productBrand()?.name) ?? []);
+  readonly options = computed(() => this.item() ? attributeOptions(this.item()!, this.catalog()?.brandFacet?.name) : []);
   readonly complete = computed(() => this.options().every(option => Object.hasOwn(this.choices(), option.name)));
-  readonly variant = computed(() => this.item() ? resolveVariant(this.item()!, this.choices()) : null);
+  readonly variant = computed(() => this.item() ? resolveVariant(this.item()!, this.choices(), this.catalog()?.brandFacet?.name) : null);
   readonly images = computed(() => this.item() ? variantImages(this.item()!,this.variant()) : []);
   readonly quantity = computed(() => positiveQuantity(this.quantityText()));
   readonly combo = computed(() => this.item()?evaluateCombo(this.item()!,this.variant(),this.comboChoices(),this.quantity()):null);

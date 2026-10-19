@@ -7,7 +7,7 @@ import { attributeOptions, attributeChoiceState } from './variant-selection';
   template: `
     @for (option of options(); track option.name) {
       <fieldset class="mb-7">
-        <legend class="mb-3 text-sm font-semibold">{{ option.name }} <span class="ml-2 font-normal text-muted">{{ option.selected === undefined ? 'Elige una opción' : option.selected || 'No aplica' }}</span></legend>
+        <legend class="mb-3 text-sm font-semibold">{{ option.name === brandAttributeName() ? 'Marca' : option.name }} <span class="ml-2 font-normal text-muted">{{ option.selected === undefined ? 'Elige una opción' : option.selected || 'No aplica' }}</span></legend>
         <div class="flex flex-wrap gap-2">
           @for (value of option.values; track value.text) {
             <button type="button" class="min-w-16 rounded-md border border-input-border px-5 py-3 text-sm font-normal hover:border-ink disabled:line-through disabled:opacity-50"
@@ -20,22 +20,24 @@ import { attributeOptions, attributeChoiceState } from './variant-selection';
       </fieldset>
     }
     @if (options().length) {
-      <p class="text-xs leading-5 text-muted">Las opciones tachadas no están disponibles con tu selección.</p>
+      @if (hasUnavailable()) { <p class="text-xs leading-5 text-muted">Las opciones tachadas no están disponibles con tu selección.</p> }
       @if (hasChoices()) { <button type="button" class="px-0 text-xs font-normal underline underline-offset-4" (click)="reset.emit()">Restablecer selección</button> }
     }`,
 })
 export class VariantPicker {
   readonly item = input.required<CatalogItem>();
   readonly choices = input.required<Record<string,string>>();
+  readonly brandAttributeName = input<string>();
   readonly options = computed(() => {
     const item = this.item(), choices = this.choices();
-    return attributeOptions(item).map(option => ({
+    return attributeOptions(item, this.brandAttributeName()).map(option => ({
       name: option.name,
       selected: Object.hasOwn(choices, option.name) ? choices[option.name] : undefined,
-      values: option.values.map(text => ({ text, ...attributeChoiceState(item, choices, option.name, text) })),
+      values: option.values.map(text => ({ text, ...attributeChoiceState(item, choices, option.name, text, this.brandAttributeName()) })),
     }));
   });
   readonly hasChoices = computed(() => Object.keys(this.choices()).length > 0);
+  readonly hasUnavailable = computed(() => this.options().some(option => option.values.some(value => !value.available)));
   readonly choose = output<{name:string;value:string}>();
   readonly reset = output<void>();
 }
